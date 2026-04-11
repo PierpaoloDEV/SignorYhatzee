@@ -98,34 +98,34 @@ export default function App() {
   };
 
   /* totale punti giocatore p */
-  const totalScore = (p) => {
-    if (!scores[p]) return 0;
-    return Object.values(scores[p]).reduce((a, b) => a + b, 0);
+  const totalScore = (p, currentScores = scores) => {
+    if (!currentScores[p]) return 0;
+    return Object.values(currentScores[p]).reduce((a, b) => a + b, 0);
   };
 
   /* regola da bere */
-  const getDrinkRule = (cat) => {
+  const getDrinkRule = (cat, currentScores = scores) => {
     switch (cat) {
       case "threeKind":   return "Scegli chi beve 🍺";
       case "fourKind":    return "Scegli 2 che bevono 🍻";
       case "fullHouse":   return "Bevono tutti! (Compreso te) 🍻";
       case "smallStraight": {
-        const min = Math.min(...players.map((_, i) => totalScore(i)));
-        const losers = players.filter((_, i) => totalScore(i) === min);
+        const min = Math.min(...players.map((_, i) => totalScore(i, currentScores)));
+        const losers = players.filter((_, i) => totalScore(i, currentScores) === min);
         return "Bevono: " + losers.join(", ");
       }
       case "largeStraight": {
-        const max = Math.max(...players.map((_, i) => totalScore(i)));
-        const winners = players.filter((_, i) => totalScore(i) === max);
+        const max = Math.max(...players.map((_, i) => totalScore(i, currentScores)));
+        const winners = players.filter((_, i) => totalScore(i, currentScores) === max);
         return "Bevono: " + winners.join(", ");
       }
       case "yahtzee": return "🔥 BEVONO TUTTI GLI ALTRI + Crea una nuova regola!";
       case "chance": {
         const chanceScores = players.map((_, i) => {
-          const v = scores[i]?.chance;
+          const v = currentScores[i]?.chance;
           return v !== undefined && v > 0 ? v : null;
         });
-        if (chanceScores.every((v) => v === null)) return "Bevi tu 🍺 (prima chance!)";
+        if (chanceScores.every((v) => v === null)) return "Bevi tu 🍺 (nessun altro ha punti in chance!)";
         const valid = chanceScores.filter((v) => v !== null);
         const min = Math.min(...valid);
         const losers = players.filter((_, i) => chanceScores[i] === min);
@@ -213,7 +213,7 @@ export default function App() {
 
     let rule = "";
     if (value > 0) {
-      rule = getDrinkRule(cat);
+      rule = getDrinkRule(cat, newScores);
     }
     if (rule) popupParts.push("Regola Turno:\n" + rule);
     
