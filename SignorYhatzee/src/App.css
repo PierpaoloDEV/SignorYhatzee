@@ -131,34 +131,91 @@ html, body, #root {
   color: var(--muted);
 }
 
-/* ── Mini Scoreboard ─────────────────────────────────────── */
-.mini-scoreboard {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
+/* ── Main Scoreboard Table ───────────────────────────────── */
+.scoreboard-container {
+  width: 100%;
+  overflow-x: auto;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--surface2);
+  margin-bottom: 24px;
+  box-shadow: var(--shadow);
+}
+
+.main-scoreboard {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.main-scoreboard th,
+.main-scoreboard td {
+  padding: 10px 8px;
+  border: 1px solid var(--surface2);
+  min-width: 60px;
+}
+
+.main-scoreboard th {
+  background: var(--surface2);
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.main-scoreboard th.active {
+  color: var(--accent);
+  background: rgba(34,197,94,.1);
+}
+
+.main-scoreboard td:first-child {
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  z-index: 10;
+}
+.main-scoreboard th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 11;
+}
+
+.active-cell {
+  background: rgba(34,197,94,.05);
+}
+
+.score-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s;
   width: 100%;
 }
-
-.mini-player {
-  background: var(--surface);
-  border-radius: 8px;
-  padding: 6px 14px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 72px;
-  border: 2px solid transparent;
-  transition: border-color .2s;
+.score-btn:hover {
+  transform: scale(1.05);
 }
 
-.mini-player.active {
-  border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(34,197,94,.3);
+.used-cell {
+  font-weight: 700;
+  color: var(--text);
 }
 
-.mini-name { font-size: .75rem; color: var(--muted); }
-.mini-pts  { font-size: 1.1rem; font-weight: 700; }
+.empty-cell {
+  color: var(--surface2);
+}
+
+.table-pts {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
 
 /* ── Dice ────────────────────────────────────────────────── */
 .dice-row {
@@ -202,6 +259,43 @@ html, body, #root {
 
 /* ── Roll button ─────────────────────────────────────────── */
 .roll-btn { width: 100%; max-width: 320px; }
+
+/* ── Bet Button ──────────────────────────────────────────── */
+.btn-bet {
+  background: linear-gradient(135deg, var(--gold), #d97706);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(251,191,36,.35);
+  margin-top: 10px;
+  width: 100%;
+  max-width: 320px;
+}
+.btn-bet:hover { box-shadow: 0 6px 24px rgba(251,191,36,.55); }
+
+.active-bet {
+  margin-top: 10px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  background: rgba(251,191,36,0.15);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  text-align: center;
+  font-weight: 600;
+  width: 100%;
+  max-width: 320px;
+}
+
+.active-trap {
+  margin-top: 10px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  background: rgba(239,68,68,0.15);
+  border: 1px solid var(--red);
+  color: var(--red);
+  text-align: center;
+  font-weight: 600;
+  width: 100%;
+  max-width: 320px;
+}
 
 /* ── Categories ──────────────────────────────────────────── */
 .categories { width: 100%; }
@@ -280,7 +374,7 @@ html, body, #root {
   to   { transform: scale(1);  opacity: 1; }
 }
 
-.popup-text { font-size: 1.2rem; font-weight: 700; line-height: 1.6; }
+.popup-text { font-size: 1.2rem; font-weight: 700; line-height: 1.6; white-space: pre-wrap; }
 
 /* ── Game Over screen ────────────────────────────────────── */
 .game-over-screen { justify-content: center; text-align: center; }
@@ -319,4 +413,44 @@ html, body, #root {
 @media (max-width: 400px) {
   .die { width: 52px; height: 52px; font-size: 1.8rem; }
   .input-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Yahtzee Animation ───────────────────────────────────── */
+.yahtzee-animation {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  background: radial-gradient(circle, rgba(251,191,36,0.2) 0%, transparent 80%);
+  animation: yahtzeeFlash 0.5s ease-in-out infinite alternate;
+}
+
+.yahtzee-text {
+  font-size: 4.5rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 20px #ef4444, 0 0 40px #f59e0b, 0 0 60px #fbbf24;
+  animation: yahtzeePop 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, yahtzeeWobble 2s linear infinite;
+  transform-origin: center;
+  text-align: center;
+  letter-spacing: 0.1em;
+}
+
+@keyframes yahtzeeFlash {
+  from { background-color: rgba(251,191,36,0.1); }
+  to { background-color: rgba(239,68,68,0.3); }
+}
+
+@keyframes yahtzeePop {
+  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+@keyframes yahtzeeWobble {
+  0%, 100% { transform: scale(1) rotate(0); }
+  25% { transform: scale(1.1) rotate(5deg); }
+  75% { transform: scale(1.1) rotate(-5deg); }
 }
