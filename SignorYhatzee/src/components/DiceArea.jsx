@@ -1,7 +1,7 @@
 import { DICE_FACES } from "../constants";
 
 export default function DiceArea({ state }) {
-  const { dice, held, rolling, toggleHold, rollsLeft, rollDice, betMode, bet } = state;
+  const { dice, held, rolling, toggleHold, rollsLeft, rollDice, betMode, bet, setShowBetModal } = state;
 
   return (
     <>
@@ -23,8 +23,14 @@ export default function DiceArea({ state }) {
         onClick={rollDice}
         disabled={rollsLeft === 0 || rolling || (betMode === "OBBLIGATORIA" && rollsLeft === 3 && !bet)}
       >
-        {rolling ? "⏳ Lancio..." : (betMode === "OBBLIGATORIA" && rollsLeft === 3 && !bet) ? "⚠️ Scommetti prima di lanciare" : "🎲 Lancia i dadi"}
+        {rolling ? "⏳ Lancio..." : (betMode === "OBBLIGATORIA" && rollsLeft === 3 && !bet) ? "⚠️ Scommetti" : "🎲 Lancia i dadi"}
       </button>
+
+      {betMode !== "NO" && rollsLeft === 3 && !bet && (
+        <button className="btn btn-bet" onClick={() => setShowBetModal(true)}>
+          🎰 Piazza Scommessa
+        </button>
+      )}
     </>
   );
 }

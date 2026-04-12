@@ -8,21 +8,21 @@ export function useGameState() {
   const [players, setPlayers] = useState([]);
   const [betMode, setBetMode] = useState("SCELTA");
   const [trapMode, setTrapMode] = useState("VISIBILE");
-  
+
   const [dice, setDice] = useState([1, 1, 1, 1, 1]);
   const [held, setHeld] = useState([false, false, false, false, false]);
   const [rollsLeft, setRollsLeft] = useState(3);
   const [player, setPlayer] = useState(0);
   const [scores, setScores] = useState([]);
   const [rolling, setRolling] = useState(false);
-  
+
   const [popup, setPopup] = useState(null);
   const [bet, setBet] = useState(null);
   const [showBetModal, setShowBetModal] = useState(false);
   const [traps, setTraps] = useState([]);
   const [showTrapModal, setShowTrapModal] = useState(false);
   const [showYahtzeeAnim, setShowYahtzeeAnim] = useState(false);
-  
+
   const [activeRules, setActiveRules] = useState([]);
   const [pendingYahtzee, setPendingYahtzee] = useState(false);
   const [pendingTrap, setPendingTrap] = useState(false);
@@ -94,7 +94,7 @@ export function useGameState() {
     const valid = playerNames.filter((n) => n.trim() !== "");
     if (valid.length < 2) return;
     setPlayers(valid);
-    setScores(valid.map(() => ({  })));
+    setScores(valid.map(() => ({})));
     setSetup(false);
   };
 
@@ -103,13 +103,18 @@ export function useGameState() {
     setRolling(true);
     setTimeout(() => {
       const rolledCount = held.filter(h => !h).length;
+      // -- TEST DIAGNOSTICO --
+      // Per attivare il test (dadi truccati a [5, 5, 5, 5, 5]), de-commenta la riga "const forceTestDice" e commenta quella del "rollRandom".
+
       const newDice = dice.map((d, i) => (held[i] ? d : rollRandom()));
+      // const newDice = [5, 5, 5, 5, 5]; 
+
       setDice(newDice);
-      
+
       let extraPopup = null;
-      if (activeRules.some(r => r.key === "minguccio") && rolledCount === 5 && rollsLeft < 3) {
+      if (activeRules.some(r => r.key === "minguccio") && rolledCount === 5) {
         const counts = getCounts(newDice);
-        if (hasOfAKind(counts, 3)) extraPopup = "Regola Minguccio: Hai rilanciato 5 dadi insieme e hai fatto almeno Tris! BEVI! 🍺";
+        if (hasOfAKind(counts, 3)) extraPopup = "Regola Minguccio: Hai lanciato 5 dadi insieme e hai fatto almeno Tris! BEVI! 🍺";
       }
 
       if (activeRules.some(r => r.key === "mirsi") && rollsLeft === 1) {
@@ -121,8 +126,8 @@ export function useGameState() {
       }
 
       if (extraPopup) {
-         setPopup(extraPopup);
-         setMidTurnPopup(true);
+        setPopup(extraPopup);
+        setMidTurnPopup(true);
       }
 
       setRollsLeft((r) => r - 1);
