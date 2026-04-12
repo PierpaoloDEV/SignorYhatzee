@@ -5,6 +5,7 @@ import BetModal from "./modals/BetModal";
 import TrapModal from "./modals/TrapModal";
 import YahtzeeRuleModal from "./modals/YahtzeeRuleModal";
 import DrinkPopup from "./modals/DrinkPopup";
+import RulesInfoModal from "./modals/RulesInfoModal";
 import { CATEGORIES } from "../constants";
 
 export default function GameScreen({ state }) {
@@ -41,6 +42,7 @@ export default function GameScreen({ state }) {
       <BetModal state={state} />
       <TrapModal state={state} />
       <YahtzeeRuleModal state={state} />
+      <RulesInfoModal state={state} />
 
       {showYahtzeeAnim && (
         <div className="yahtzee-animation">

@@ -46,47 +46,30 @@ export function useGameState() {
 
   // Regola da bere
   const getDrinkRule = (cat, currentScores = scores) => {
-    const isGiandu = activeRules.some(r => r.key === "giandu");
-    const myScore = totalScore(player, currentScores);
-
     switch (cat) {
       case "threeKind": return "Scegli chi beve 🍺";
       case "fourKind": return "Scegli 2 che bevono 🍻";
       case "fullHouse": return "Bevono tutti! (Compreso te) 🍻";
       case "smallStraight": {
-        if (isGiandu) {
-          const losers = players.map((_, i) => i).filter(i => i !== player && totalScore(i, currentScores) < myScore);
-          return losers.length > 0 ? "Bevono (punteggio totale inferiore al tuo): " + losers.map(i => players[i]).join(", ") : "Nessuno beve (sei il peggiore)";
-        }
         const min = Math.min(...players.map((_, i) => totalScore(i, currentScores)));
         const losers = players.filter((_, i) => totalScore(i, currentScores) === min);
-        return "Bevono: " + losers.join(", ");
+        return "Bevono (punteggio più basso): " + losers.join(", ");
       }
       case "largeStraight": {
-        if (isGiandu) {
-          const winners = players.map((_, i) => i).filter(i => i !== player && totalScore(i, currentScores) > myScore);
-          return winners.length > 0 ? "Bevono (punteggio totale superiore al tuo): " + winners.map(i => players[i]).join(", ") : "Nessuno beve (sei il migliore)";
-        }
         const max = Math.max(...players.map((_, i) => totalScore(i, currentScores)));
         const winners = players.filter((_, i) => totalScore(i, currentScores) === max);
-        return "Bevono: " + winners.join(", ");
+        return "Bevono (punteggio più alto): " + winners.join(", ");
       }
       case "yahtzee": return "🔥 BEVONO TUTTI GLI ALTRI + Crea una nuova regola!";
       case "chance": {
-        if (isGiandu) {
-          const myChance = currentScores[player]?.chance || 0;
-          const losers = players.map((_, i) => i).filter(i => i !== player && currentScores[i]?.chance !== undefined && currentScores[i].chance < myChance);
-          return losers.length > 0 ? "Bevono (meno di te in Chance): " + losers.map(i => players[i]).join(", ") : "Nessuno ha un Chance più basso del tuo.";
-        }
-        const chanceScores = players.map((_, i) => {
-          const v = currentScores[i]?.chance;
-          return v !== undefined && v > 0 ? v : null;
-        });
-        if (chanceScores.every((v) => v === null)) return "Bevi tu 🍺 (nessun altro ha punti in chance!)";
-        const valid = chanceScores.filter((v) => v !== null);
-        const min = Math.min(...valid);
-        const losers = players.filter((_, i) => chanceScores[i] === min);
-        return "Beve: " + losers.join(", ");
+        // Raccoglie i punteggi chance di chi ha già segnato (incluso il giocatore attuale dopo newScores)
+        const withChance = players
+          .map((_, i) => ({ i, v: currentScores[i]?.chance }))
+          .filter(({ v }) => v !== undefined);
+        if (withChance.length === 0) return "";
+        const min = Math.min(...withChance.map(({ v }) => v));
+        const losers = withChance.filter(({ v }) => v === min).map(({ i }) => players[i]);
+        return "Beve" + (losers.length > 1 ? "vono" : "") + " (Chance più bassa): " + losers.join(", ");
       }
       default: return "";
     }

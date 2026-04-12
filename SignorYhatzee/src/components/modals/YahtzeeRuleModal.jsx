@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { CATEGORIES, CUSTOM_PART_1, CUSTOM_PART_2, SPECIAL_RULES } from "../../constants";
+import { CUSTOM_PART_1, CUSTOM_PART_2, CUSTOM_PART_3, SPECIAL_RULES } from "../../constants";
 
 export default function YahtzeeRuleModal({ state }) {
   const { showRuleModal, setShowRuleModal, activeRules, setActiveRules, nextTurn } = state;
   const [ruleTab, setRuleTab] = useState("custom");
-  const [customRuleDraft, setCustomRuleDraft] = useState({ part1: CUSTOM_PART_1[0], part2: CUSTOM_PART_2[0], part3: CATEGORIES[0].key });
+  const [customRuleDraft, setCustomRuleDraft] = useState({ part1: CUSTOM_PART_1[0], part2: CUSTOM_PART_2[0], part3: CUSTOM_PART_3[0].key });
 
   if (!showRuleModal) return null;
 
@@ -53,10 +53,10 @@ export default function YahtzeeRuleModal({ state }) {
               value={customRuleDraft.part3}
               onChange={e => setCustomRuleDraft({ ...customRuleDraft, part3: e.target.value })}
             >
-              {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+              {CUSTOM_PART_3.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
             </select>
             <button className="btn btn-primary" style={{ marginTop: '10px' }} onClick={() => {
-              const label = CATEGORIES.find(c => c.key === customRuleDraft.part3)?.label;
+              const label = CUSTOM_PART_3.find(c => c.key === customRuleDraft.part3)?.label;
               setActiveRules(prev => [...prev, {
                 type: "custom",
                 ...customRuleDraft,
