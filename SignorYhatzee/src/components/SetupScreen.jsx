@@ -6,7 +6,7 @@ export default function SetupScreen({ state }) {
 
   return (
     <div className="app setup-screen">
-      <h1 className="title">🎲 SignorYhatzee</h1>
+      <h1 className="title">🎲 SignorYahtzee</h1>
       <p className="subtitle">Inserisci i giocatori (min 2)</p>
       <div className="input-grid">
         {playerNames.map((name, i) => (
