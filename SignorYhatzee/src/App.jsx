@@ -72,11 +72,33 @@ const CATEGORIES = [
 
 const DICE_FACES = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 
+const BET_OPTS = [
+  { v: "NO", l: "NO" },
+  { v: "SCELTA", l: "A SCELTA" },
+  { v: "OBBLIGATORIA", l: "OBBLIGATORIA" }
+];
+
+const TRAP_OPTS = [
+  { v: "NO", l: "NO" },
+  { v: "VISIBILE", l: "VISIBILE" },
+  { v: "NASCOSTA", l: "NASCOSTA" }
+];
+
+function cycleOption(val, opts, dir) {
+  const i = opts.findIndex(o => o.v === val);
+  let n = i + dir;
+  if (n < 0) n = opts.length - 1;
+  if (n >= opts.length) n = 0;
+  return opts[n].v;
+}
+
 /* ── Component ──────────────────────────────────────────────── */
 export default function App() {
   const [setup, setSetup] = useState(true);
-  const [playerNames, setPlayerNames] = useState(Array(10).fill(""));
+  const [playerNames, setPlayerNames] = useState(["", "", "", ""]);
   const [players, setPlayers] = useState([]);
+  const [betMode, setBetMode] = useState("SCELTA");
+  const [trapMode, setTrapMode] = useState("VISIBILE");
   const [dice, setDice] = useState([1, 1, 1, 1, 1]);
   const [held, setHeld] = useState([false, false, false, false, false]);
   const [rollsLeft, setRollsLeft] = useState(3);
@@ -137,7 +159,7 @@ export default function App() {
 
   /* azioni */
   const startGame = () => {
-    const valid = playerNames.filter((n) => n.trim() !== "").slice(0, 10);
+    const valid = playerNames.filter((n) => n.trim() !== "");
     if (valid.length < 2) return;
     setPlayers(valid);
     setScores(valid.map(() => ({})));
@@ -148,8 +170,8 @@ export default function App() {
     if (rollsLeft === 0 || rolling) return;
     setRolling(true);
     setTimeout(() => {
-      setDice((prev) => prev.map((d, i) => (held[i] ? d : rollRandom())));
-      //setDice([4, 4, 4, 4, 4]);
+      //setDice((prev) => prev.map((d, i) => (held[i] ? d : rollRandom())));
+      setDice([4, 4, 4, 4, 4]);
       setRollsLeft((r) => r - 1);
       setRolling(false);
     }, 400);
@@ -223,7 +245,7 @@ export default function App() {
     }
     if (rule) popupParts.push("Regola Turno:\n" + rule);
 
-    const triggeredTrapSet = (cat === "fourKind" && value >= 18);
+    const triggeredTrapSet = (trapMode !== "NO" && cat === "fourKind" && value >= 18);
 
     if (popupParts.length > 0) {
       setPopup(popupParts.join("\n\n"));
@@ -264,59 +286,90 @@ export default function App() {
     return players.filter((_, i) => totalScore(i) === max).join(", ");
   };
 
-  const renderRow = (cat) => (
-    <tr key={cat.key}>
-      <td>{cat.label}</td>
-      {players.map((p, i) => {
-        const used = scores[i]?.[cat.key] !== undefined;
-        const isCurrent = i === player;
-        const preview = isCurrent ? calculateScore(dice, cat.key) : "";
-        const canSelect = rollsLeft < 3;
+  const renderRow = (cat) => {
+    const matchingTrapsCount = traps.filter(t => t === cat.key).length;
+    const trapIcon = (trapMode === "VISIBILE" && matchingTrapsCount > 0)
+      ? ` 💣${matchingTrapsCount > 1 ? `x${matchingTrapsCount}` : ""}`
+      : "";
 
-        if (isCurrent && !used) {
+    return (
+      <tr key={cat.key}>
+        <td>
+          {cat.label}
+          <span style={{ color: '#ef4444', fontWeight: 'bold' }}>{trapIcon}</span>
+        </td>
+        {players.map((p, i) => {
+          const used = scores[i]?.[cat.key] !== undefined;
+          const isCurrent = i === player;
+          const preview = isCurrent ? calculateScore(dice, cat.key) : "";
+          const canSelect = rollsLeft < 3;
+
+          if (isCurrent && !used) {
+            return (
+              <td key={i} className="active-cell">
+                <button
+                  className="score-btn"
+                  onClick={() => canSelect && selectCategory(cat.key)}
+                  disabled={!canSelect}
+                  style={{ opacity: canSelect ? 1 : 0.4, cursor: canSelect ? 'pointer' : 'not-allowed' }}
+                >
+                  +{preview}
+                </button>
+              </td>
+            );
+          }
+
           return (
-            <td key={i} className="active-cell">
-              <button
-                className="score-btn"
-                onClick={() => canSelect && selectCategory(cat.key)}
-                disabled={!canSelect}
-                style={{ opacity: canSelect ? 1 : 0.4, cursor: canSelect ? 'pointer' : 'not-allowed' }}
-              >
-                +{preview}
-              </button>
+            <td key={i} className={used ? "used-cell" : "empty-cell"}>
+              {used ? scores[i][cat.key] : "-"}
             </td>
           );
-        }
-
-        return (
-          <td key={i} className={used ? "used-cell" : "empty-cell"}>
-            {used ? scores[i][cat.key] : "-"}
-          </td>
-        );
-      })}
-    </tr>
-  );
+        })}
+      </tr>
+    );
+  };
 
   /* ── SETUP SCREEN ───────────────────────────────────────────── */
   if (setup) {
     return (
       <div className="app setup-screen">
         <h1 className="title">🎲 SignorYhatzee</h1>
-        <p className="subtitle">Inserisci i giocatori (min 2, max 10)</p>
+        <p className="subtitle">Inserisci i giocatori (min 2)</p>
         <div className="input-grid">
-          {Array.from({ length: 10 }).map((_, i) => (
+          {playerNames.map((name, i) => (
             <input
               key={i}
               className="player-input"
               placeholder={`Giocatore ${i + 1}`}
-              value={playerNames[i]}
+              value={name}
               onChange={(e) => {
                 const arr = [...playerNames];
                 arr[i] = e.target.value;
+                if (arr.every((n) => n.trim() !== "")) {
+                  arr.push("", "");
+                }
                 setPlayerNames(arr);
               }}
             />
           ))}
+        </div>
+        <div className="settings-panel" style={{ display: 'flex', gap: '30px', justifyContent: 'center', margin: '20px 0', flexWrap: 'wrap' }}>
+          <div className="setting-group" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <label style={{ fontWeight: 'bold', marginBottom: '10px' }}>🎰 Scommessa</label>
+            <div className="custom-select" style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.1)', border: '2px solid rgba(255,255,255,0.3)', padding: '6px 10px', borderRadius: '30px', minWidth: '190px', justifyContent: 'space-between' }}>
+              <button type="button" style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'inherit', fontSize: '1rem', cursor: 'pointer', padding: '5px 10px', borderRadius: '50%' }} onClick={() => setBetMode(cycleOption(betMode, BET_OPTS, -1))}>◀</button>
+              <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center', flex: 1 }}>{BET_OPTS.find(o => o.v === betMode)?.l}</span>
+              <button type="button" style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'inherit', fontSize: '1rem', cursor: 'pointer', padding: '5px 10px', borderRadius: '50%' }} onClick={() => setBetMode(cycleOption(betMode, BET_OPTS, 1))}>▶</button>
+            </div>
+          </div>
+          <div className="setting-group" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <label style={{ fontWeight: 'bold', marginBottom: '10px' }}>💣 Trappola</label>
+            <div className="custom-select" style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.1)', border: '2px solid rgba(255,255,255,0.3)', padding: '6px 10px', borderRadius: '30px', minWidth: '190px', justifyContent: 'space-between' }}>
+              <button type="button" style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'inherit', fontSize: '1rem', cursor: 'pointer', padding: '5px 10px', borderRadius: '50%' }} onClick={() => setTrapMode(cycleOption(trapMode, TRAP_OPTS, -1))}>◀</button>
+              <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center', flex: 1 }}>{TRAP_OPTS.find(o => o.v === trapMode)?.l}</span>
+              <button type="button" style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'inherit', fontSize: '1rem', cursor: 'pointer', padding: '5px 10px', borderRadius: '50%' }} onClick={() => setTrapMode(cycleOption(trapMode, TRAP_OPTS, 1))}>▶</button>
+            </div>
+          </div>
         </div>
         <button className="btn btn-primary" onClick={startGame}>
           🚀 Inizia la partita
@@ -345,7 +398,7 @@ export default function App() {
           className="btn btn-outline"
           onClick={() => {
             setSetup(true);
-            setPlayerNames(Array(10).fill(""));
+            setPlayerNames(["", "", "", ""]);
           }}
         >
           🔄 Nuova partita
@@ -381,16 +434,16 @@ export default function App() {
       </div>
 
       <button
-        className={`btn btn-primary roll-btn ${rollsLeft === 0 ? "disabled" : ""}`}
+        className={`btn btn-primary roll-btn ${rollsLeft === 0 || (betMode === "OBBLIGATORIA" && rollsLeft === 3 && !bet) ? "disabled" : ""}`}
         onClick={rollDice}
-        disabled={rollsLeft === 0 || rolling}
+        disabled={rollsLeft === 0 || rolling || (betMode === "OBBLIGATORIA" && rollsLeft === 3 && !bet)}
       >
-        {rolling ? "⏳ Lancio..." : "🎲 Lancia i dadi"}
+        {rolling ? "⏳ Lancio..." : (betMode === "OBBLIGATORIA" && rollsLeft === 3 && !bet) ? "⚠️ Scommetti prima di lanciare" : "🎲 Lancia i dadi"}
       </button>
 
-      {rollsLeft === 3 && !bet && (
+      {rollsLeft === 3 && !bet && betMode !== "NO" && (
         <button className="btn btn-bet" onClick={() => setShowBetModal(true)}>
-          🎰 Punta una Scommessa
+          {betMode === "OBBLIGATORIA" ? "⚠️ Devi Puntare una Scommessa" : "🎰 Punta una Scommessa"}
         </button>
       )}
 
@@ -402,7 +455,7 @@ export default function App() {
 
       {traps.length > 0 && (
         <div className="active-trap" style={{ fontSize: '1.2rem' }}>
-          🚨 Trappole segrete attive: {Array(traps.length).fill("💣").join(" ")}
+          🚨 Trappole {trapMode === "NASCOSTA" ? "segrete " : ""}attive: {Array(traps.length).fill("💣").join(" ")}
         </div>
       )}
 
