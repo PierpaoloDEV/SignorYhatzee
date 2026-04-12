@@ -92,7 +92,17 @@ function cycleOption(val, opts, dir) {
   return opts[n].v;
 }
 
+const SPECIAL_RULES = [
+  { key: "minguccio", title: "Regola Minguccio", desc: "Se lanci 5 dadi insieme e ne escono almeno 3 uguali bevi." },
+  { key: "mirsi", title: "Regola Mirsi", desc: "Se al terzo lancio la somma dei tuoi dadi è superiore a 22 bevi." },
+  { key: "giandu", title: "Regola Giandu", desc: "Sostituisci i 'Beve quello con il punteggio più basso/alto' con 'Bevono tutti quelli con il punteggio più basso/alto di te'." },
+];
+
+const CUSTOM_PART_1 = ["Bevono tutti", "Bevi tu", "Scegli chi beve"];
+const CUSTOM_PART_2 = ["quando fai punti su", "quando NON fai punti su (0 pt)"];
+
 /* ── Component ──────────────────────────────────────────────── */
+
 export default function App() {
   const [setup, setSetup] = useState(true);
   const [playerNames, setPlayerNames] = useState(["", "", "", ""]);
@@ -113,6 +123,14 @@ export default function App() {
   const [showTrapModal, setShowTrapModal] = useState(false);
   const [showYahtzeeAnim, setShowYahtzeeAnim] = useState(false);
 
+  const [activeRules, setActiveRules] = useState([]);
+  const [pendingYahtzee, setPendingYahtzee] = useState(false);
+  const [showRuleModal, setShowRuleModal] = useState(false);
+  const [ruleTab, setRuleTab] = useState("custom");
+  const [customRuleDraft, setCustomRuleDraft] = useState({ part1: CUSTOM_PART_1[0], part2: CUSTOM_PART_2[0], part3: CATEGORIES[0].key });
+  const [midTurnPopup, setMidTurnPopup] = useState(false);
+
+
   /* totale dadi alti giocatore p */
   const getUpperScore = (p) => {
     if (!scores[p]) return 0;
@@ -128,22 +146,38 @@ export default function App() {
 
   /* regola da bere */
   const getDrinkRule = (cat, currentScores = scores) => {
+    const isGiandu = activeRules.some(r => r.key === "giandu");
+    const myScore = totalScore(player, currentScores);
+
     switch (cat) {
       case "threeKind": return "Scegli chi beve 🍺";
       case "fourKind": return "Scegli 2 che bevono 🍻";
       case "fullHouse": return "Bevono tutti! (Compreso te) 🍻";
       case "smallStraight": {
+        if (isGiandu) {
+          const losers = players.map((_, i) => i).filter(i => i !== player && totalScore(i, currentScores) < myScore);
+          return losers.length > 0 ? "Bevono (punteggio totale inferiore al tuo): " + losers.map(i => players[i]).join(", ") : "Nessuno beve (sei il peggiore)";
+        }
         const min = Math.min(...players.map((_, i) => totalScore(i, currentScores)));
         const losers = players.filter((_, i) => totalScore(i, currentScores) === min);
         return "Bevono: " + losers.join(", ");
       }
       case "largeStraight": {
+        if (isGiandu) {
+          const winners = players.map((_, i) => i).filter(i => i !== player && totalScore(i, currentScores) > myScore);
+          return winners.length > 0 ? "Bevono (punteggio totale superiore al tuo): " + winners.map(i => players[i]).join(", ") : "Bevi tu GET C";
+        }
         const max = Math.max(...players.map((_, i) => totalScore(i, currentScores)));
         const winners = players.filter((_, i) => totalScore(i, currentScores) === max);
         return "Bevono: " + winners.join(", ");
       }
       case "yahtzee": return "🔥 BEVONO TUTTI GLI ALTRI + Crea una nuova regola!";
       case "chance": {
+        if (isGiandu) {
+          const myChance = currentScores[player]?.chance || 0;
+          const losers = players.map((_, i) => i).filter(i => i !== player && currentScores[i]?.chance !== undefined && currentScores[i].chance < myChance);
+          return losers.length > 0 ? "Bevono (meno di te in Chance): " + losers.map(i => players[i]).join(", ") : "Nessuno ha un Chance più basso del tuo bevi tu.";
+        }
         const chanceScores = players.map((_, i) => {
           const v = currentScores[i]?.chance;
           return v !== undefined && v > 0 ? v : null;
@@ -171,8 +205,30 @@ export default function App() {
     if (rollsLeft === 0 || rolling) return;
     setRolling(true);
     setTimeout(() => {
-      //setDice((prev) => prev.map((d, i) => (held[i] ? d : rollRandom())));
+      const rolledCount = held.filter(h => !h).length;
+      const newDice = dice.map((d, i) => (held[i] ? d : rollRandom()));
       setDice([4, 4, 4, 4, 4]);
+      //setDice(newDice);
+
+      let extraPopup = null;
+      if (activeRules.some(r => r.key === "minguccio") && rolledCount === 5) {
+        const counts = getCounts(newDice);
+        if (hasOfAKind(counts, 3)) extraPopup = "Regola Minguccio: Hai lanciato 5 dadi insieme e hai fatto almeno Tris! BEVI! 🍺";
+      }
+
+      if (activeRules.some(r => r.key === "mirsi") && rollsLeft === 1) {
+        const sum = newDice.reduce((acc, v) => acc + v, 0);
+        if (sum > 22) {
+          if (extraPopup) extraPopup += "\n\nRegola Mirsi: La somma al 3° lancio è > 22 (" + sum + ")! BEVI! 🍺";
+          else extraPopup = "Regola Mirsi: La somma al 3° lancio è > 22 (" + sum + ")! BEVI! 🍺";
+        }
+      }
+
+      if (extraPopup) {
+        setPopup(extraPopup);
+        setMidTurnPopup(true);
+      }
+
       setRollsLeft((r) => r - 1);
       setRolling(false);
     }, 400);
@@ -240,6 +296,16 @@ export default function App() {
       setTraps(prev => prev.filter(t => t !== cat));
     }
 
+    activeRules.forEach(r => {
+      if (r.type === "custom" && r.part3 === cat) {
+        if (r.part2 === "quando fai punti su" && value > 0) {
+          popupParts.push(`📜 Regola Custom attivata:\n${r.part1}`);
+        } else if (r.part2 === "quando NON fai punti su (0 pt)" && value === 0) {
+          popupParts.push(`📜 Regola Custom attivata (0 punti):\n${r.part1}`);
+        }
+      }
+    });
+
     let rule = "";
     if (value > 0) {
       rule = getDrinkRule(cat, newScores);
@@ -251,10 +317,13 @@ export default function App() {
     if (popupParts.length > 0) {
       setPopup(popupParts.join("\n\n"));
       setPendingTrap(triggeredTrapSet);
+      setPendingYahtzee(isYahtzeeTriggered);
     } else {
       setBet(null);
       if (triggeredTrapSet) {
         setShowTrapModal(true);
+      } else if (isYahtzeeTriggered) {
+        setShowRuleModal(true);
       } else {
         nextTurn();
       }
@@ -264,9 +333,18 @@ export default function App() {
   const handleClosePopup = () => {
     setPopup(null);
     setBet(null);
+
+    if (midTurnPopup) {
+      setMidTurnPopup(false);
+      return;
+    }
+
     if (pendingTrap) {
       setShowTrapModal(true);
       setPendingTrap(false);
+    } else if (pendingYahtzee) {
+      setShowRuleModal(true);
+      setPendingYahtzee(false);
     } else {
       nextTurn();
     }
@@ -560,6 +638,106 @@ export default function App() {
               Nessuna Trappola
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Yahtzee Rule Modal */}
+      {showRuleModal && (
+        <div className="popup-overlay" style={{ zIndex: 3000 }}>
+          <div className="popup bet-popup" style={{ width: '90%', maxWidth: '400px' }}>
+            <h2 style={{ marginBottom: '15px' }}>📜 Crea Nuova Regola</h2>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+              <button
+                className={`btn ${ruleTab === "custom" ? "btn-primary" : "btn-outline"}`}
+                style={{ flex: 1, padding: '8px' }}
+                onClick={() => setRuleTab("custom")}
+              >
+                Custom
+              </button>
+              <button
+                className={`btn ${ruleTab === "special" ? "btn-primary" : "btn-outline"}`}
+                style={{ flex: 1, padding: '8px' }}
+                onClick={() => setRuleTab("special")}
+              >
+                Speciali
+              </button>
+            </div>
+
+            {ruleTab === "custom" ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left' }}>
+                <p style={{ fontSize: '0.9rem', color: 'var(--muted)', textAlign: 'center' }}>
+                  Componi la tua regola, verrà applicata in automatico.
+                </p>
+                <select
+                  className="player-input"
+                  value={customRuleDraft.part1}
+                  onChange={e => setCustomRuleDraft({ ...customRuleDraft, part1: e.target.value })}
+                >
+                  {CUSTOM_PART_1.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+                <select
+                  className="player-input"
+                  value={customRuleDraft.part2}
+                  onChange={e => setCustomRuleDraft({ ...customRuleDraft, part2: e.target.value })}
+                >
+                  {CUSTOM_PART_2.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+                <select
+                  className="player-input"
+                  value={customRuleDraft.part3}
+                  onChange={e => setCustomRuleDraft({ ...customRuleDraft, part3: e.target.value })}
+                >
+                  {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+                </select>
+                <button className="btn btn-primary" style={{ marginTop: '10px' }} onClick={() => {
+                  const label = CATEGORIES.find(c => c.key === customRuleDraft.part3)?.label;
+                  setActiveRules(prev => [...prev, {
+                    type: "custom",
+                    ...customRuleDraft,
+                    label: `${customRuleDraft.part1} ${customRuleDraft.part2} ${label}`
+                  }]);
+                  setShowRuleModal(false);
+                  nextTurn();
+                }}>Applica Regola</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {SPECIAL_RULES.map(sr => {
+                  const isActive = activeRules.some(r => r.key === sr.key);
+                  return (
+                    <button
+                      key={sr.key}
+                      className={`btn ${isActive ? 'btn-primary' : 'btn-outline'}`}
+                      style={{ padding: '10px', display: 'flex', flexDirection: 'column', textAlign: 'left', opacity: isActive ? 0.5 : 1 }}
+                      disabled={isActive}
+                      onClick={() => {
+                        setActiveRules(prev => [...prev, { type: "special", ...sr }]);
+                        setShowRuleModal(false);
+                        nextTurn();
+                      }}
+                    >
+                      <strong style={{ fontSize: '1rem' }}>{sr.title} {isActive && "✅"}</strong>
+                      <span style={{ fontSize: '0.8rem', whiteSpace: 'normal', color: isActive ? '#fff' : 'var(--muted)' }}>{sr.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Active Rules Display */}
+      {activeRules.length > 0 && (
+        <div className="active-rules-container" style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <h3 style={{ marginBottom: '10px', fontSize: '1.1rem', color: 'var(--gold)', textAlign: 'center' }}>📜 Leggi in Vigore</h3>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {activeRules.map((r, i) => (
+              <li key={i} style={{ fontSize: '0.9rem', padding: '10px', background: 'rgba(0,0,0,0.5)', borderRadius: '8px', borderLeft: '4px solid var(--gold)' }}>
+                {r.type === "custom" ? r.label : <span><strong>{r.title}</strong>: {r.desc}</span>}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
