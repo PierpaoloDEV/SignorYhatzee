@@ -39,7 +39,16 @@ export default function Scoreboard({ state }) {
 
           return (
             <td key={i} className={used ? "used-cell" : "empty-cell"}>
-              {used ? scores[i][cat.key] : "-"}
+              {used ? (
+                <>
+                  {scores[i][cat.key]}
+                  {cat.key === "yahtzee" && scores[i]._yahtzeeCount > 1 && (
+                    <span style={{ fontSize: '0.7rem', color: 'var(--gold)', marginLeft: '3px', fontWeight: 'bold' }}>
+                      (x{scores[i]._yahtzeeCount})
+                    </span>
+                  )}
+                </>
+              ) : "-"}
             </td>
           );
         })}

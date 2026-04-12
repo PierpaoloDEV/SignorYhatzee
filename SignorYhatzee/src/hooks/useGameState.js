@@ -39,7 +39,9 @@ export function useGameState() {
   // Totale punti giocatore p
   const totalScore = (p, currentScores = scores) => {
     if (!currentScores[p]) return 0;
-    return Object.values(currentScores[p]).reduce((a, b) => a + b, 0);
+    return Object.entries(currentScores[p])
+      .filter(([k]) => !k.startsWith('_'))
+      .reduce((a, [, b]) => a + b, 0);
   };
 
   // Regola da bere
@@ -103,18 +105,22 @@ export function useGameState() {
     setRolling(true);
     setTimeout(() => {
       const rolledCount = held.filter(h => !h).length;
-      // -- TEST DIAGNOSTICO --
-      // Per attivare il test (dadi truccati a [5, 5, 5, 5, 5]), de-commenta la riga "const forceTestDice" e commenta quella del "rollRandom".
 
       const newDice = dice.map((d, i) => (held[i] ? d : rollRandom()));
-      // const newDice = [5, 5, 5, 5, 5]; 
+      //const newDice = [5, 5, 5, 5, 5]; // TEST
 
       setDice(newDice);
 
+      // Animazione Yahtzee alla comparsa dei dadi
+      const newCounts = getCounts(newDice);
+      if (hasOfAKind(newCounts, 5)) {
+        setShowYahtzeeAnim(true);
+        setTimeout(() => setShowYahtzeeAnim(false), 4000);
+      }
+
       let extraPopup = null;
       if (activeRules.some(r => r.key === "minguccio") && rolledCount === 5) {
-        const counts = getCounts(newDice);
-        if (hasOfAKind(counts, 3)) extraPopup = "Regola Minguccio: Hai lanciato 5 dadi insieme e hai fatto almeno Tris! BEVI! 🍺";
+        if (hasOfAKind(newCounts, 3)) extraPopup = "Regola Minguccio: Hai lanciato 5 dadi insieme e hai fatto almeno Tris! BEVI! 🍺";
       }
 
       if (activeRules.some(r => r.key === "mirsi") && rollsLeft === 1) {
@@ -145,17 +151,29 @@ export function useGameState() {
     if (!scores[player] || scores[player][cat] !== undefined) return;
 
     const value = calculateScore(dice, cat);
-    let bonusAchieved = false;
-    let isYahtzeeTriggered = (cat === "yahtzee" && value === 50);
+    const counts = getCounts(dice);
+    const isCurrentYahtzee = hasOfAKind(counts, 5);
 
-    if (isYahtzeeTriggered) {
-      setShowYahtzeeAnim(true);
-      setTimeout(() => setShowYahtzeeAnim(false), 4000);
-    }
+    // Yahtzee bonus: il giocatore ha già segnato yahtzee > 0 e fa di nuovo yahtzee scegliendo un'altra casella
+    const isExtraYahtzee = isCurrentYahtzee && cat !== "yahtzee" && scores[player]?.yahtzee !== undefined && scores[player].yahtzee > 0;
+
+    let bonusAchieved = false;
+    let isYahtzeeTriggered = (cat === "yahtzee" && value === 50) || isExtraYahtzee;
+
+    // Animazione spostata al rollDice, qui la togliamo
 
     const newScores = scores.map((s, i) => {
       if (i === player) {
         let ns = { ...s, [cat]: value };
+
+        // Gestione Yahtzee extra: +100 sul valore attuale della cella yahtzee
+        if (isExtraYahtzee) {
+          const prevCount = ns._yahtzeeCount || 1;
+          const newCount = prevCount + 1;
+          ns._yahtzeeCount = newCount;
+          ns.yahtzee = (s.yahtzee || 0) + 100; // +100 ogni yahtzee aggiuntivo
+        }
+
         const isUpper = ["ones", "twos", "threes", "fours", "fives", "sixes"].includes(cat);
         if (isUpper && s.bonus === undefined) {
           let curUpper = 0;
@@ -207,9 +225,11 @@ export function useGameState() {
       }
     });
 
+    // Per extra yahtzee usa sempre la drink rule dello yahtzee normale
+    const ruleKey = isExtraYahtzee ? "yahtzee" : cat;
     let rule = "";
-    if (value > 0) {
-      rule = getDrinkRule(cat, newScores);
+    if (value > 0 || isExtraYahtzee) {
+      rule = getDrinkRule(ruleKey, newScores);
     }
     if (rule) popupParts.push("Regola Turno:\n" + rule);
 
