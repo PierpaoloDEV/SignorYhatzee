@@ -37,56 +37,56 @@ function calculateScore(dice, category) {
   const counts = getCounts(dice);
   const sum = dice.reduce((a, b) => a + b, 0);
   switch (category) {
-    case "ones":        return counts[0] * 1;
-    case "twos":        return counts[1] * 2;
-    case "threes":      return counts[2] * 3;
-    case "fours":       return counts[3] * 4;
-    case "fives":       return counts[4] * 5;
-    case "sixes":       return counts[5] * 6;
-    case "threeKind":   return hasOfAKind(counts, 3) ? sum : 0;
-    case "fourKind":    return hasOfAKind(counts, 4) ? sum : 0;
-    case "fullHouse":   return counts.includes(3) && counts.includes(2) ? 25 : 0;
+    case "ones": return counts[0] * 1;
+    case "twos": return counts[1] * 2;
+    case "threes": return counts[2] * 3;
+    case "fours": return counts[3] * 4;
+    case "fives": return counts[4] * 5;
+    case "sixes": return counts[5] * 6;
+    case "threeKind": return hasOfAKind(counts, 3) ? sum : 0;
+    case "fourKind": return hasOfAKind(counts, 4) ? sum : 0;
+    case "fullHouse": return counts.includes(3) && counts.includes(2) ? 25 : 0;
     case "smallStraight": return hasStraight(counts, 4) ? 30 : 0;
     case "largeStraight": return hasStraight(counts, 5) ? 40 : 0;
-    case "yahtzee":     return hasOfAKind(counts, 5) ? 50 : 0;
-    case "chance":      return sum;
-    default:            return 0;
+    case "yahtzee": return hasOfAKind(counts, 5) ? 50 : 0;
+    case "chance": return sum;
+    default: return 0;
   }
 }
 
 const CATEGORIES = [
-  { key: "ones",          label: "1 (Assi)" },
-  { key: "twos",          label: "2 (Due)" },
-  { key: "threes",        label: "3 (Tre)" },
-  { key: "fours",         label: "4 (Quattro)" },
-  { key: "fives",         label: "5 (Cinque)" },
-  { key: "sixes",         label: "6 (Sei)" },
-  { key: "threeKind",     label: "Tris" },
-  { key: "fourKind",      label: "Poker" },
-  { key: "fullHouse",     label: "Full" },
+  { key: "ones", label: "1 (Assi)" },
+  { key: "twos", label: "2 (Due)" },
+  { key: "threes", label: "3 (Tre)" },
+  { key: "fours", label: "4 (Quattro)" },
+  { key: "fives", label: "5 (Cinque)" },
+  { key: "sixes", label: "6 (Sei)" },
+  { key: "threeKind", label: "Tris" },
+  { key: "fourKind", label: "Poker" },
+  { key: "fullHouse", label: "Full" },
   { key: "smallStraight", label: "Scala Piccola" },
   { key: "largeStraight", label: "Scala Grande" },
-  { key: "yahtzee",       label: "Yahtzee" },
-  { key: "chance",        label: "Chance" },
+  { key: "yahtzee", label: "Yahtzee" },
+  { key: "chance", label: "Chance" },
 ];
 
 const DICE_FACES = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 
 /* ── Component ──────────────────────────────────────────────── */
 export default function App() {
-  const [setup, setSetup]           = useState(true);
+  const [setup, setSetup] = useState(true);
   const [playerNames, setPlayerNames] = useState(Array(10).fill(""));
-  const [players, setPlayers]       = useState([]);
-  const [dice, setDice]             = useState([1, 1, 1, 1, 1]);
-  const [held, setHeld]             = useState([false, false, false, false, false]);
-  const [rollsLeft, setRollsLeft]   = useState(3);
-  const [player, setPlayer]         = useState(0);
-  const [scores, setScores]         = useState([]);
-  const [rolling, setRolling]       = useState(false);
-  const [popup, setPopup]           = useState(null);
-  const [bet, setBet]               = useState(null);
+  const [players, setPlayers] = useState([]);
+  const [dice, setDice] = useState([1, 1, 1, 1, 1]);
+  const [held, setHeld] = useState([false, false, false, false, false]);
+  const [rollsLeft, setRollsLeft] = useState(3);
+  const [player, setPlayer] = useState(0);
+  const [scores, setScores] = useState([]);
+  const [rolling, setRolling] = useState(false);
+  const [popup, setPopup] = useState(null);
+  const [bet, setBet] = useState(null);
   const [showBetModal, setShowBetModal] = useState(false);
-  const [trap, setTrap]             = useState(null);
+  const [traps, setTraps] = useState([]);
   const [showTrapModal, setShowTrapModal] = useState(false);
   const [showYahtzeeAnim, setShowYahtzeeAnim] = useState(false);
 
@@ -106,9 +106,9 @@ export default function App() {
   /* regola da bere */
   const getDrinkRule = (cat, currentScores = scores) => {
     switch (cat) {
-      case "threeKind":   return "Scegli chi beve 🍺";
-      case "fourKind":    return "Scegli 2 che bevono 🍻";
-      case "fullHouse":   return "Bevono tutti! (Compreso te) 🍻";
+      case "threeKind": return "Scegli chi beve 🍺";
+      case "fourKind": return "Scegli 2 che bevono 🍻";
+      case "fullHouse": return "Bevono tutti! (Compreso te) 🍻";
       case "smallStraight": {
         const min = Math.min(...players.map((_, i) => totalScore(i, currentScores)));
         const losers = players.filter((_, i) => totalScore(i, currentScores) === min);
@@ -149,6 +149,7 @@ export default function App() {
     setRolling(true);
     setTimeout(() => {
       setDice((prev) => prev.map((d, i) => (held[i] ? d : rollRandom())));
+      //setDice([4, 4, 4, 4, 4]);
       setRollsLeft((r) => r - 1);
       setRolling(false);
     }, 400);
@@ -162,7 +163,7 @@ export default function App() {
   const selectCategory = (cat) => {
     if (rollsLeft === 3) return; // Devi lanciare i dadi almeno una volta
     if (!scores[player] || scores[player][cat] !== undefined) return;
-    
+
     const value = calculateScore(dice, cat);
     let bonusAchieved = false;
     let isYahtzeeTriggered = (cat === "yahtzee" && value === 50);
@@ -171,7 +172,7 @@ export default function App() {
       setShowYahtzeeAnim(true);
       setTimeout(() => setShowYahtzeeAnim(false), 4000);
     }
-    
+
     const newScores = scores.map((s, i) => {
       if (i === player) {
         let ns = { ...s, [cat]: value };
@@ -206,9 +207,14 @@ export default function App() {
       }
     }
 
-    if (trap === cat && value > 0) {
-      popupParts.push("🚨 SEI CADUTO NELLA TRAPPOLA! 🚨\nBevi un sorso extra!");
-      setTrap(null);
+    const matchingTrapsCount = traps.filter(t => t === cat).length;
+    if (matchingTrapsCount > 0 && value > 0) {
+      if (matchingTrapsCount === 1) {
+        popupParts.push("🚨 SEI CADUTO NELLA TRAPPOLA! 🚨\nBevi 1 sorso extra!");
+      } else {
+        popupParts.push(`🚨 SEI CADUTO IN ${matchingTrapsCount} TRAPPOLE! 🚨\nBevi ${matchingTrapsCount} sorsi extra!`);
+      }
+      setTraps(prev => prev.filter(t => t !== cat));
     }
 
     let rule = "";
@@ -216,9 +222,9 @@ export default function App() {
       rule = getDrinkRule(cat, newScores);
     }
     if (rule) popupParts.push("Regola Turno:\n" + rule);
-    
+
     const triggeredTrapSet = (cat === "fourKind" && value >= 18);
-    
+
     if (popupParts.length > 0) {
       setPopup(popupParts.join("\n\n"));
       setTimeout(() => {
@@ -266,12 +272,12 @@ export default function App() {
         const isCurrent = i === player;
         const preview = isCurrent ? calculateScore(dice, cat.key) : "";
         const canSelect = rollsLeft < 3;
-        
+
         if (isCurrent && !used) {
           return (
             <td key={i} className="active-cell">
-              <button 
-                className="score-btn" 
+              <button
+                className="score-btn"
                 onClick={() => canSelect && selectCategory(cat.key)}
                 disabled={!canSelect}
                 style={{ opacity: canSelect ? 1 : 0.4, cursor: canSelect ? 'pointer' : 'not-allowed' }}
@@ -281,7 +287,7 @@ export default function App() {
             </td>
           );
         }
-        
+
         return (
           <td key={i} className={used ? "used-cell" : "empty-cell"}>
             {used ? scores[i][cat.key] : "-"}
@@ -387,16 +393,16 @@ export default function App() {
           🎰 Punta una Scommessa
         </button>
       )}
-      
+
       {bet && (
         <div className="active-bet">
           Scommessa attiva: <span className="cat-score">{CATEGORIES.find(c => c.key === bet)?.label}</span>
         </div>
       )}
 
-      {trap && (
-        <div className="active-trap">
-          🚨 Trappola: se fai punti su <span className="cat-score">{CATEGORIES.find(c => c.key === trap)?.label}</span> BEVI!
+      {traps.length > 0 && (
+        <div className="active-trap" style={{ fontSize: '1.2rem' }}>
+          🚨 Trappole segrete attive: {Array(traps.length).fill("💣").join(" ")}
         </div>
       )}
 
@@ -483,7 +489,7 @@ export default function App() {
                   key={cat.key}
                   className="cat-btn"
                   onClick={() => {
-                    setTrap(cat.key);
+                    setTraps(prev => [...prev, cat.key]);
                     setShowTrapModal(false);
                     nextTurn();
                   }}
