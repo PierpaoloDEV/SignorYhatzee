@@ -1,9 +1,11 @@
 import { CATEGORIES } from "../../constants";
 
 export default function BetModal({ state }) {
-  const { showBetModal, setShowBetModal, scores, player, setBet } = state;
+  const { showBetModal, setShowBetModal, scores, player, setBet, betMode, activeRules } = state;
 
   if (!showBetModal) return null;
+
+  const isBetMandatory = betMode === "OBBLIGATORIA" || activeRules.some(r => r.key === "mandatory_bet");
 
   return (
     <div className="popup-overlay">
@@ -23,9 +25,12 @@ export default function BetModal({ state }) {
             </button>
           ))}
         </div>
-        <button className="btn btn-outline" style={{ marginTop: '20px', width: '100%' }} onClick={() => setShowBetModal(false)}>
-          Annulla Scommessa
-        </button>
+        
+        {!isBetMandatory && (
+          <button className="btn btn-outline" style={{ marginTop: '20px', width: '100%' }} onClick={() => setShowBetModal(false)}>
+            Annulla Scommessa
+          </button>
+        )}
       </div>
     </div>
   );

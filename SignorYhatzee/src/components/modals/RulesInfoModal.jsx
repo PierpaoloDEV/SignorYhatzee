@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 const GENERAL_RULES = [
+  { cat: "Generale", rule: "Se metti 0 su un punteggio: BEVI 2! 🍺🍺" },
   { cat: "1-6 (Assi…Sei)", rule: "Nessuna regola speciale da bere." },
   { cat: "Tris", rule: "Scegli chi beve 🍺" },
   { cat: "Poker", rule: "Scegli 2 persone che bevono 🍻 — se il punteggio è ≥18 puoi piazzare una Trappola!" },
@@ -8,7 +9,7 @@ const GENERAL_RULES = [
   { cat: "Scala Piccola", rule: "Bevono quelli con il punteggio più basso." },
   { cat: "Scala Grande", rule: "Bevono quelli con il punteggio più alto." },
   { cat: "Yahtzee", rule: "Bevono tutti gli altri 🔥 + chi lo fa può creare una nuova regola!" },
-  { cat: "Chance", rule: "Beve/Bevono chi ha il punteggio Chance più basso tra chi l'ha già segnata (se sei il primo bevi tu)." },
+  { cat: "Chance", rule: "Bevono tutti quelli con Chance inferiore alla tua. Se non c'è nessuno, bevi tu! (Gli 0 non contano)" },
   { cat: "Bonus (+35pt)", rule: "Raggiunto con ≥63 punti nella sezione alta. Chi lo sblocca sceglie 3 sorsi da fare bere!" },
 ];
 

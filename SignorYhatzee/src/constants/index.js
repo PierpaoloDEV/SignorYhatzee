@@ -31,6 +31,7 @@ export const TRAP_OPTS = [
 export const SPECIAL_RULES = [
   { key: "minguccio", title: "Regola Minguccio", desc: "Se lanci 5 dadi insieme e ne escono almeno 3 uguali bevi." },
   { key: "mirsi", title: "Regola Mirsi", desc: "Se al terzo lancio la somma dei tuoi dadi è superiore a 22 bevi." },
+  { key: "mandatory_bet", title: "Scommessa Obbligatoria", desc: "La scommessa diventa obbligatoria in ogni turno." },
 ];
 
 export const CUSTOM_PART_1 = [

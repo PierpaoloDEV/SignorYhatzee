@@ -62,14 +62,19 @@ export function useGameState() {
       }
       case "yahtzee": return "🔥 BEVONO TUTTI GLI ALTRI + Crea una nuova regola!";
       case "chance": {
-        // Raccoglie i punteggi chance di chi ha già segnato (incluso il giocatore attuale dopo newScores)
-        const withChance = players
-          .map((_, i) => ({ i, v: currentScores[i]?.chance }))
-          .filter(({ v }) => v !== undefined);
-        if (withChance.length === 0) return "";
-        const min = Math.min(...withChance.map(({ v }) => v));
-        const losers = withChance.filter(({ v }) => v === min).map(({ i }) => players[i]);
-        return "Beve" + (losers.length > 1 ? "vono" : "") + " (Chance più bassa): " + losers.join(", ");
+        const currentChance = currentScores[player]?.chance || 0;
+        // Raccoglie i punteggi chance degli ALTRI che hanno già segnato e > 0
+        const othersWithChance = players
+          .map((name, i) => ({ name, i, v: currentScores[i]?.chance }))
+          .filter(({ i, v }) => i !== player && v !== undefined && v > 0);
+
+        const losers = othersWithChance.filter(({ v }) => v < currentChance).map(({ name }) => name);
+
+        if (losers.length > 0) {
+          return "Bevono tutti quelli con Chance inferiore alla tua: " + losers.join(", ");
+        } else {
+          return "Nessuno ha una Chance inferiore alla tua: BEVI TU! 🍺";
+        }
       }
       default: return "";
     }
@@ -177,6 +182,10 @@ export function useGameState() {
 
     let popupParts = [];
 
+    if (value === 0) {
+      popupParts.push("💀 HAI SEGNATO 0: BEVI 2! 🍺🍺");
+    }
+
     if (bonusAchieved) {
       popupParts.push("🎉 BONUS SBLOCCATO! (+35 pt)\nScegli 3 persone (o la stessa 3 volte) da far bere! 🍻");
     }
@@ -224,7 +233,7 @@ export function useGameState() {
     // Per extra yahtzee usa sempre la drink rule dello yahtzee normale
     const ruleKey = isExtraYahtzee ? "yahtzee" : cat;
     let rule = "";
-    if (value > 0 || isExtraYahtzee) {
+    if (value > 0 || isExtraYahtzee || cat === "chance") {
       rule = getDrinkRule(ruleKey, newScores);
     }
     if (rule) popupParts.push("Regola Turno:\n" + rule);

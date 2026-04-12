@@ -1,7 +1,9 @@
 import { DICE_FACES } from "../constants";
 
 export default function DiceArea({ state }) {
-  const { dice, held, rolling, toggleHold, rollsLeft, rollDice, betMode, bet, setShowBetModal } = state;
+  const { dice, held, rolling, toggleHold, rollsLeft, rollDice, betMode, bet, setShowBetModal, activeRules } = state;
+
+  const isBetMandatory = betMode === "OBBLIGATORIA" || activeRules.some(r => r.key === "mandatory_bet");
 
   return (
     <>
@@ -19,11 +21,11 @@ export default function DiceArea({ state }) {
       </div>
 
       <button
-        className={`btn btn-primary roll-btn ${rollsLeft === 0 || (betMode === "OBBLIGATORIA" && rollsLeft === 3 && !bet) ? "disabled" : ""}`}
+        className={`btn btn-primary roll-btn ${rollsLeft === 0 || (isBetMandatory && rollsLeft === 3 && !bet) ? "disabled" : ""}`}
         onClick={rollDice}
-        disabled={rollsLeft === 0 || rolling || (betMode === "OBBLIGATORIA" && rollsLeft === 3 && !bet)}
+        disabled={rollsLeft === 0 || rolling || (isBetMandatory && rollsLeft === 3 && !bet)}
       >
-        {rolling ? "⏳ Lancio..." : (betMode === "OBBLIGATORIA" && rollsLeft === 3 && !bet) ? "⚠️ Scommetti" : "🎲 Lancia i dadi"}
+        {rolling ? "⏳ Lancio..." : (isBetMandatory && rollsLeft === 3 && !bet) ? "⚠️ Scommetti" : "🎲 Lancia i dadi"}
       </button>
 
       {betMode !== "NO" && rollsLeft === 3 && !bet && (
