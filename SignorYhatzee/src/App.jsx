@@ -99,6 +99,7 @@ export default function App() {
   const [players, setPlayers] = useState([]);
   const [betMode, setBetMode] = useState("SCELTA");
   const [trapMode, setTrapMode] = useState("VISIBILE");
+  const [pendingTrap, setPendingTrap] = useState(false);
   const [dice, setDice] = useState([1, 1, 1, 1, 1]);
   const [held, setHeld] = useState([false, false, false, false, false]);
   const [rollsLeft, setRollsLeft] = useState(3);
@@ -249,15 +250,7 @@ export default function App() {
 
     if (popupParts.length > 0) {
       setPopup(popupParts.join("\n\n"));
-      setTimeout(() => {
-        setPopup(null);
-        setBet(null);
-        if (triggeredTrapSet) {
-          setShowTrapModal(true);
-        } else {
-          nextTurn();
-        }
-      }, (bet || bonusAchieved || isYahtzeeTriggered) ? 4500 : 2500);
+      setPendingTrap(triggeredTrapSet);
     } else {
       setBet(null);
       if (triggeredTrapSet) {
@@ -265,6 +258,17 @@ export default function App() {
       } else {
         nextTurn();
       }
+    }
+  };
+
+  const handleClosePopup = () => {
+    setPopup(null);
+    setBet(null);
+    if (pendingTrap) {
+      setShowTrapModal(true);
+      setPendingTrap(false);
+    } else {
+      nextTurn();
     }
   };
 
@@ -495,9 +499,10 @@ export default function App() {
 
       {/* Drink popup */}
       {popup && (
-        <div className="popup-overlay">
+        <div className="popup-overlay" onClick={handleClosePopup} style={{ cursor: 'pointer' }}>
           <div className="popup">
-            <p className="popup-text">🍻 {popup}</p>
+            <p className="popup-text" style={{ whiteSpace: 'pre-wrap' }}>🍻 {popup}</p>
+            <p style={{ marginTop: '20px', fontSize: '0.9rem', opacity: 0.8, textAlign: 'center' }}>(Tocca ovunque per continuare)</p>
           </div>
         </div>
       )}
