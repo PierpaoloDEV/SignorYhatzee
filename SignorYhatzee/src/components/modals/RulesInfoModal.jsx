@@ -83,18 +83,37 @@ export default function RulesInfoModal({ state }) {
               <p style={{ fontSize: '0.9rem', color: 'var(--muted)', textAlign: 'center' }}>Nessuna regola aggiuntiva ancora.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
-                {activeRules.map((r, i) => (
-                  <div key={i} style={{ background: 'rgba(244,114,182,0.1)', border: '1px solid rgba(244,114,182,0.3)', borderRadius: '10px', padding: '8px 12px', textAlign: 'left' }}>
-                    <span style={{ fontWeight: 'bold', color: '#f472b6' }}>
-                      {r.type === 'special' ? `⭐ ${r.title}` : '📜 Regola Custom'}:{' '}
-                    </span>
-                    <span style={{ fontSize: '0.9rem' }}>
-                      {r.type === 'special' ? r.desc : r.label}
-                    </span>
-                  </div>
-                ))}
+                {activeRules.map((r, i) => {
+                  let displayLabel = r.type === 'special' ? r.desc : r.label;
+                  
+                  // Risoluzione dinamica dei nomi per le regole custom
+                  if (r.type === "custom" && r.part1) {
+                    const allTotalScores = state.players.map((_, idx) => state.totalScore(idx));
+                    if (r.part1.toLowerCase().includes("più punti")) {
+                      const max = Math.max(...allTotalScores);
+                      const leaders = state.players.filter((_, idx) => allTotalScores[idx] === max);
+                      displayLabel = displayLabel.replace(/Il giocatore con più punti/i, `Il giocatore con più punti (${leaders.join(", ")})`);
+                    } else if (r.part1.toLowerCase().includes("meno punti")) {
+                      const min = Math.min(...allTotalScores);
+                      const losers = state.players.filter((_, idx) => allTotalScores[idx] === min);
+                      displayLabel = displayLabel.replace(/Il giocatore con meno punti/i, `Il giocatore con meno punti (${losers.join(", ")})`);
+                    }
+                  }
+
+                  return (
+                    <div key={i} style={{ background: 'rgba(244,114,182,0.1)', border: '1px solid rgba(244,114,182,0.3)', borderRadius: '10px', padding: '8px 12px', textAlign: 'left' }}>
+                      <span style={{ fontWeight: 'bold', color: '#f472b6' }}>
+                        {r.type === 'special' ? `⭐ ${r.title}` : '📜 Regola Custom'}:{' '}
+                      </span>
+                      <span style={{ fontSize: '0.9rem' }}>
+                        {displayLabel}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
+
 
             <button
               className="btn btn-outline"

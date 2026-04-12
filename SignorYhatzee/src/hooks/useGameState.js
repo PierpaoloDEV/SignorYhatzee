@@ -94,6 +94,7 @@ export function useGameState() {
 
       setDice(newDice);
 
+
       // Animazione Yahtzee alla comparsa dei dadi
       const newCounts = getCounts(newDice);
       if (hasOfAKind(newCounts, 5)) {
@@ -200,13 +201,25 @@ export function useGameState() {
 
     activeRules.forEach(r => {
       if (r.type === "custom" && r.part3 === cat) {
+        let dynamicPart1 = r.part1;
+        if (r.part1.toLowerCase().includes("più punti")) {
+          const max = Math.max(...players.map((_, i) => totalScore(i, newScores)));
+          const leaders = players.filter((_, i) => totalScore(i, newScores) === max);
+          dynamicPart1 = dynamicPart1.replace(/Il giocatore con più punti/i, `Il giocatore con più punti (${leaders.join(", ")})`);
+        } else if (r.part1.toLowerCase().includes("meno punti")) {
+          const min = Math.min(...players.map((_, i) => totalScore(i, newScores)));
+          const losers = players.filter((_, i) => totalScore(i, newScores) === min);
+          dynamicPart1 = dynamicPart1.replace(/Il giocatore con meno punti/i, `Il giocatore con meno punti (${losers.join(", ")})`);
+        }
+
         if (r.part2 === "quando fai punti su" && value > 0) {
-          popupParts.push(`📜 Regola Custom attivata:\n${r.part1}`);
+          popupParts.push(`📜 Regola Custom attivata:\n${dynamicPart1}`);
         } else if (r.part2 === "quando NON fai punti su (0 pt)" && value === 0) {
-          popupParts.push(`📜 Regola Custom attivata (0 punti):\n${r.part1}`);
+          popupParts.push(`📜 Regola Custom attivata (0 punti):\n${dynamicPart1}`);
         }
       }
     });
+
 
     // Per extra yahtzee usa sempre la drink rule dello yahtzee normale
     const ruleKey = isExtraYahtzee ? "yahtzee" : cat;
