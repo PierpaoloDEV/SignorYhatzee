@@ -7,7 +7,9 @@ export default function GameManagementModal({ state }) {
     players, 
     removePlayer, 
     restartGame, 
-    resetGame 
+    resetGame,
+    socketId,
+    multiplayerPlayers
   } = state;
 
   if (!showManagementModal) return null;
@@ -29,24 +31,24 @@ export default function GameManagementModal({ state }) {
                 background: 'rgba(255,255,255,0.05)',
                 borderRadius: '8px'
               }}>
-                <span style={{ fontWeight: 'bold' }}>{name}</span>
-                <button 
-                  className="btn btn-outline" 
-                  style={{ 
-                    padding: '4px 8px', 
-                    fontSize: '0.8rem', 
-                    borderColor: '#ff4d4d', 
-                    color: '#ff4d4d',
-                    minWidth: 'auto'
-                  }}
-                  onClick={() => {
-                    if (window.confirm(`Rimuovere ${name} dalla partita?`)) {
+                <span style={{ fontWeight: 'bold' }}>{name} {multiplayerPlayers[i]?.id === socketId ? '(Tu)' : ''}</span>
+                {multiplayerPlayers[i]?.id !== socketId && (
+                  <button 
+                    className="btn btn-outline" 
+                    style={{ 
+                      padding: '4px 8px', 
+                      fontSize: '0.8rem', 
+                      borderColor: '#ff4d4d', 
+                      color: '#ff4d4d',
+                      minWidth: 'auto'
+                    }}
+                    onClick={() => {
                       removePlayer(i);
-                    }
-                  }}
-                >
-                  Rimuovi ❌
-                </button>
+                    }}
+                  >
+                    Rimuovi ❌
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -57,10 +59,8 @@ export default function GameManagementModal({ state }) {
             className="btn btn-primary" 
             style={{ background: 'var(--gold)', color: '#000' }}
             onClick={() => {
-              if (window.confirm("Sei sicuro di voler ricominciare la partita? Tutti i punteggi andranno persi.")) {
-                restartGame();
-                setShowManagementModal(false);
-              }
+              restartGame();
+              setShowManagementModal(false);
             }}
           >
             🔄 Ricomincia Partita
@@ -69,10 +69,8 @@ export default function GameManagementModal({ state }) {
           <button 
             className="btn btn-outline" 
             onClick={() => {
-              if (window.confirm("Tornare al menu principale? La partita corrente verrà cancellata.")) {
-                resetGame();
-                setShowManagementModal(false);
-              }
+              resetGame();
+              setShowManagementModal(false);
             }}
           >
             🏠 Torna al Menu

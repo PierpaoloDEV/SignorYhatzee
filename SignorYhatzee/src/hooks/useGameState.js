@@ -1,8 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CATEGORIES } from "../constants";
 import { calculateScore, rollRandom, getCounts, hasOfAKind } from "../utils/gameHelpers";
+import { triggerHaptic, triggerSuccess } from "../utils/haptics";
 
-export function useGameState() {
+export function useGameState(multiplayer = null) {
+  const { 
+    isHost = false, 
+    isConnected = false, 
+    syncState = () => {}, 
+    sendAction = () => {}, 
+    setOnStateUpdate = () => {}, 
+    setOnActionReceive = () => {},
+    socketId = null
+  } = multiplayer || {};
+
   const [setup, setSetup] = useState(true);
   const [playerNames, setPlayerNames] = useState(["", "", "", ""]);
   const [players, setPlayers] = useState([]);
@@ -14,6 +25,7 @@ export function useGameState() {
   const [rollsLeft, setRollsLeft] = useState(3);
   const [player, setPlayer] = useState(0);
   const [scores, setScores] = useState([]);
+  const [playerIds, setPlayerIds] = useState([]);
   const [rolling, setRolling] = useState(false);
 
   const [popup, setPopup] = useState(null);
@@ -29,6 +41,57 @@ export function useGameState() {
   const [showRuleModal, setShowRuleModal] = useState(false);
   const [showManagementModal, setShowManagementModal] = useState(false);
   const [midTurnPopup, setMidTurnPopup] = useState(false);
+
+  // --- MULTIPLAYER SYNC ---
+  useEffect(() => {
+    if (multiplayer && setOnStateUpdate) {
+      setOnStateUpdate((remoteState) => {
+        if (!isHost) {
+          // I client aggiornano il loro stato locale con quello ricevuto dall'host
+          setSetup(remoteState.setup);
+          setPlayers(remoteState.players);
+          setDice(remoteState.dice);
+          setHeld(remoteState.held);
+          setRollsLeft(remoteState.rollsLeft);
+          setPlayer(remoteState.player);
+          setScores(remoteState.scores);
+          setPlayerIds(remoteState.playerIds || []);
+          setRolling(remoteState.rolling);
+          setPopup(remoteState.popup);
+          setBet(remoteState.bet);
+          setTraps(remoteState.traps);
+          setActiveRules(remoteState.activeRules);
+          setShowBetModal(remoteState.showBetModal);
+          setShowTrapModal(remoteState.showTrapModal);
+          setShowRuleModal(remoteState.showRuleModal);
+        }
+      });
+    }
+  }, [multiplayer, isHost, setOnStateUpdate]);
+
+  useEffect(() => {
+    if (multiplayer && isHost && syncState) {
+      syncState({
+        setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds,
+        popup, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal
+        // Rimossa la sincronizzazione di showManagementModal per privacy Host
+      });
+    }
+  }, [setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds, popup, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal, isHost, syncState]);
+
+  // AUTO-REMOVE DISCONNECTED PLAYERS (Host only)
+  useEffect(() => {
+    if (isHost && !setup && multiplayer?.players) {
+      const currentSocketIds = multiplayer.players.map(p => p.id);
+      playerIds.forEach((id, index) => {
+        if (!currentSocketIds.includes(id)) {
+          console.log(`Auto-removing disconnected player at index ${index} (ID: ${id})`);
+          removePlayer(index);
+        }
+      });
+    }
+  }, [multiplayer?.players, isHost, setup, playerIds]);
+
 
   // Calcolo dadi alti giocatore p
   const getUpperScore = (p) => {
@@ -81,17 +144,44 @@ export function useGameState() {
     }
   };
 
-  const startGame = () => {
-    const valid = playerNames.filter((n) => n.trim() !== "");
-    if (valid.length < 2) return;
-    setPlayers(valid);
-    setScores(valid.map(() => ({})));
+  const startGame = (overrideNames = null, overrideIds = null) => {
+    const namesSource = overrideNames || playerNames;
+    const idsSource = overrideIds || [];
+    
+    // Pulisci e deduplica nomi
+    const validNames = [];
+    const validIds = [];
+    
+    namesSource.forEach((n, i) => {
+      if (n && n.trim() !== "") {
+        validNames.push(n.trim());
+        if (idsSource[i]) validIds.push(idsSource[i]);
+      }
+    });
+
+    if (validNames.length < 2) return;
+    
+    setPlayers(validNames);
+    setScores(validNames.map(() => ({})));
+    setPlayerIds(validIds);
     setSetup(false);
   };
 
   const rollDice = () => {
+    // Protezione Turno Multiplayer
+    if (multiplayer) {
+      const myIndex = multiplayer.players.findIndex(p => p.id === multiplayer.socketId);
+      if (myIndex !== -1 && myIndex !== player) return; // Non è il tuo turno
+    }
+
+    if (multiplayer && !isHost) {
+      sendAction('ROLL_DICE');
+      return;
+    }
     if (rollsLeft === 0 || rolling) return;
+
     setRolling(true);
+    triggerHaptic();
     setTimeout(() => {
       const rolledCount = held.filter(h => !h).length;
 
@@ -132,15 +222,38 @@ export function useGameState() {
   };
 
   const toggleHold = (i) => {
+    // Protezione Turno Multiplayer
+    if (multiplayer) {
+      const myIndex = multiplayer.players.findIndex(p => p.id === multiplayer.socketId);
+      if (myIndex !== -1 && myIndex !== player) return; // Non è il tuo turno
+    }
+
+    if (multiplayer && !isHost) {
+      sendAction('TOGGLE_HOLD', { index: i });
+      return;
+    }
     if (rollsLeft === 3) return;
+
     setHeld((prev) => prev.map((h, idx) => (idx === i ? !h : h)));
   };
 
   const selectCategory = (cat) => {
+    // Protezione Turno Multiplayer
+    if (multiplayer) {
+      const myIndex = multiplayer.players.findIndex(p => p.id === multiplayer.socketId);
+      if (myIndex !== -1 && myIndex !== player) return; // Non è il tuo turno
+    }
+
+    if (multiplayer && !isHost) {
+      sendAction('SELECT_CATEGORY', { cat });
+      return;
+    }
     if (rollsLeft === 3) return;
+
     if (!scores[player] || scores[player][cat] !== undefined) return;
 
     const value = calculateScore(dice, cat);
+    triggerHaptic();
     const counts = getCounts(dice);
     const isCurrentYahtzee = hasOfAKind(counts, 5);
 
@@ -258,7 +371,12 @@ export function useGameState() {
   };
 
   const handleClosePopup = () => {
+    if (multiplayer && !isHost) {
+      sendAction('CLOSE_POPUP');
+      return;
+    }
     setPopup(null);
+
     setBet(null);
 
     if (midTurnPopup) {
@@ -296,23 +414,38 @@ export function useGameState() {
   };
 
   const removePlayer = (idx) => {
-    if (players.length <= 2) {
+    // Gestione Multiplayer Kick
+    if (multiplayer && isHost) {
+      const targetSocketId = playerIds[idx]; // Usa l'ID salvato nello stato gioco
+      if (targetSocketId && targetSocketId !== socketId) {
+        multiplayer.kickPlayer(targetSocketId);
+      }
+    }
+
+    if (players.length < 2) {
       resetGame();
       return;
     }
 
     const newPlayers = players.filter((_, i) => i !== idx);
     const newScores = scores.filter((_, i) => i !== idx);
+    const newIds = playerIds.filter((_, i) => i !== idx);
 
     let nextPlayer = player;
+    
+    // Se il giocatore rimosso viene prima di quello attuale, scala l'indice
     if (idx < player) {
       nextPlayer = player - 1;
-    } else if (idx === player) {
-      nextPlayer = player % newPlayers.length;
+    } 
+    // Se era il turno di chi è stato rimosso, nextPlayer rimane lo stesso (che ora punta al prossimo)
+    // ma dobbiamo assicurarci che non vada fuori range
+    if (nextPlayer >= newPlayers.length) {
+      nextPlayer = 0;
     }
 
     setPlayers(newPlayers);
     setScores(newScores);
+    setPlayerIds(newIds);
     setPlayer(nextPlayer);
 
     // Reset turn state
@@ -335,6 +468,10 @@ export function useGameState() {
   };
 
   const resetGame = () => {
+    // Gestione Multiplayer Close
+    if (multiplayer && isHost) {
+      multiplayer.closeRoom();
+    }
     setSetup(true);
     setPlayerNames(["", "", "", ""]);
   };
@@ -343,7 +480,12 @@ export function useGameState() {
     setup, playerNames, setPlayerNames, players, betMode, setBetMode, trapMode, setTrapMode,
     dice, held, rollsLeft, player, scores, rolling, popup, bet, setBet, showBetModal, setShowBetModal,
     traps, setTraps, showTrapModal, setShowTrapModal, showYahtzeeAnim, activeRules, setActiveRules, showRuleModal, setShowRuleModal,
-    showManagementModal, setShowManagementModal,
+    showManagementModal, setShowManagementModal, isHost, socketId,
+    multiplayerPlayers: multiplayer?.players || [],
+    isMultiplayer: !!multiplayer,
+    isMyTurn: multiplayer 
+      ? multiplayer.players.findIndex(p => p.id === multiplayer.socketId) === player
+      : true,
     getUpperScore, totalScore, startGame, rollDice, toggleHold, selectCategory, handleClosePopup, nextTurn, isGameOver, getWinner, resetGame, removePlayer, restartGame
   };
 }
