@@ -27,6 +27,7 @@ export function useGameState() {
   const [pendingYahtzee, setPendingYahtzee] = useState(false);
   const [pendingTrap, setPendingTrap] = useState(false);
   const [showRuleModal, setShowRuleModal] = useState(false);
+  const [showManagementModal, setShowManagementModal] = useState(false);
   const [midTurnPopup, setMidTurnPopup] = useState(false);
 
   // Calcolo dadi alti giocatore p
@@ -294,6 +295,45 @@ export function useGameState() {
     return players.filter((_, i) => totalScore(i) === max).join(", ");
   };
 
+  const removePlayer = (idx) => {
+    if (players.length <= 2) {
+      resetGame();
+      return;
+    }
+
+    const newPlayers = players.filter((_, i) => i !== idx);
+    const newScores = scores.filter((_, i) => i !== idx);
+
+    let nextPlayer = player;
+    if (idx < player) {
+      nextPlayer = player - 1;
+    } else if (idx === player) {
+      nextPlayer = player % newPlayers.length;
+    }
+
+    setPlayers(newPlayers);
+    setScores(newScores);
+    setPlayer(nextPlayer);
+
+    // Reset turn state
+    setDice([1, 1, 1, 1, 1]);
+    setHeld([false, false, false, false, false]);
+    setRollsLeft(3);
+    setBet(null);
+  };
+
+  const restartGame = () => {
+    setScores(players.map(() => ({})));
+    setPlayer(0);
+    setDice([1, 1, 1, 1, 1]);
+    setHeld([false, false, false, false, false]);
+    setRollsLeft(3);
+    setTraps([]);
+    setActiveRules([]);
+    setPopup(null);
+    setBet(null);
+  };
+
   const resetGame = () => {
     setSetup(true);
     setPlayerNames(["", "", "", ""]);
@@ -303,6 +343,7 @@ export function useGameState() {
     setup, playerNames, setPlayerNames, players, betMode, setBetMode, trapMode, setTrapMode,
     dice, held, rollsLeft, player, scores, rolling, popup, bet, setBet, showBetModal, setShowBetModal,
     traps, setTraps, showTrapModal, setShowTrapModal, showYahtzeeAnim, activeRules, setActiveRules, showRuleModal, setShowRuleModal,
-    getUpperScore, totalScore, startGame, rollDice, toggleHold, selectCategory, handleClosePopup, nextTurn, isGameOver, getWinner, resetGame
+    showManagementModal, setShowManagementModal,
+    getUpperScore, totalScore, startGame, rollDice, toggleHold, selectCategory, handleClosePopup, nextTurn, isGameOver, getWinner, resetGame, removePlayer, restartGame
   };
 }
