@@ -4,11 +4,11 @@ import { calculateScore, rollRandom, getCounts, hasOfAKind } from "../utils/game
 import { triggerHaptic, triggerSuccess } from "../utils/haptics";
 
 export function useGameState(multiplayer = null) {
-  const { 
-    isHost = false, 
-    isConnected = false, 
-    syncState = () => {}, 
-    sendAction = () => {}, 
+  const {
+    isHost = false,
+    isConnected = false,
+    syncState = () => { },
+    sendAction = () => { },
     socketId = null
   } = multiplayer || {};
 
@@ -145,11 +145,11 @@ export function useGameState(multiplayer = null) {
   const startGame = (overrideNames = null, overrideIds = null) => {
     const namesSource = overrideNames || playerNames;
     const idsSource = overrideIds || [];
-    
+
     // Pulisci e deduplica nomi
     const validNames = [];
     const validIds = [];
-    
+
     namesSource.forEach((n, i) => {
       if (n && n.trim() !== "") {
         validNames.push(n.trim());
@@ -158,7 +158,7 @@ export function useGameState(multiplayer = null) {
     });
 
     if (validNames.length < 2) return;
-    
+
     setPlayers(validNames);
     setScores(validNames.map(() => ({})));
     setPlayerIds(validIds);
@@ -462,11 +462,11 @@ export function useGameState(multiplayer = null) {
     const newIds = playerIds.filter((_, i) => i !== idx);
 
     let nextPlayer = player;
-    
+
     // Se il giocatore rimosso viene prima di quello attuale, scala l'indice
     if (idx < player) {
       nextPlayer = player - 1;
-    } 
+    }
     // Se era il turno di chi è stato rimosso, nextPlayer rimane lo stesso (che ora punta al prossimo)
     // ma dobbiamo assicurarci che non vada fuori range
     if (nextPlayer >= newPlayers.length) {
