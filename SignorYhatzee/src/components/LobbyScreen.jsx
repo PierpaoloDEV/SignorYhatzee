@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { cycleOption } from "../utils/gameHelpers";
+import { BET_OPTS, TRAP_OPTS } from "../constants";
 
-export default function LobbyScreen({ multiplayer, onLocalPlay, onOnlinePlay }) {
+export default function LobbyScreen({ multiplayer, onLocalPlay, onOnlinePlay, state }) {
   const { 
     hostRoom, 
     joinRoom, 
@@ -13,6 +15,8 @@ export default function LobbyScreen({ multiplayer, onLocalPlay, onOnlinePlay }) 
     leaveRoom 
   } = multiplayer;
   
+  const { betMode, setBetMode, trapMode, setTrapMode } = state || {};
+
   const [playerName, setPlayerName] = useState('');
   const [inputCode, setInputCode] = useState('');
   const [mode, setMode] = useState('choice'); // choice, host, join, waiting
@@ -109,6 +113,26 @@ export default function LobbyScreen({ multiplayer, onLocalPlay, onOnlinePlay }) 
                 ))}
               </div>
               
+              <div className="settings-panel" style={{ display: 'flex', gap: '20px', width: '100%', flexWrap: 'wrap', marginTop: '20px', marginBottom: '20px' }}>
+                <div className="setting-card" style={{ flex: 1, minWidth: '140px' }}>
+                  <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--muted)', textTransform: 'uppercase' }}>🎰 Scommessa</label>
+                  <div className="custom-select-premium">
+                    {isHost && <button className="select-btn" type="button" onClick={() => setBetMode(cycleOption(betMode, BET_OPTS, -1))}>◀</button>}
+                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center', flex: 1 }}>{BET_OPTS.find(o => o.v === betMode)?.l}</span>
+                    {isHost && <button className="select-btn" type="button" onClick={() => setBetMode(cycleOption(betMode, BET_OPTS, 1))}>▶</button>}
+                  </div>
+                </div>
+
+                <div className="setting-card" style={{ flex: 1, minWidth: '140px' }}>
+                  <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--muted)', textTransform: 'uppercase' }}>💣 Trappola</label>
+                  <div className="custom-select-premium">
+                    {isHost && <button className="select-btn" type="button" onClick={() => setTrapMode(cycleOption(trapMode, TRAP_OPTS, -1))}>◀</button>}
+                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center', flex: 1 }}>{TRAP_OPTS.find(o => o.v === trapMode)?.l}</span>
+                    {isHost && <button className="select-btn" type="button" onClick={() => setTrapMode(cycleOption(trapMode, TRAP_OPTS, 1))}>▶</button>}
+                  </div>
+                </div>
+              </div>
+
               {isHost && (
                 <button 
                   className="btn btn-primary" 

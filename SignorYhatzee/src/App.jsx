@@ -79,6 +79,7 @@ export default function App() {
         multiplayer={{...multiplayer, startGame: handleHostStart}} 
         onLocalPlay={startLocal}
         onOnlinePlay={startOnline}
+        state={gameState}
       />
     );
   } else if (appMode === "local" && gameState.setup) {

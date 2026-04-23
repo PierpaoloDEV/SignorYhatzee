@@ -61,6 +61,8 @@ export function useGameState(multiplayer = null) {
       setShowBetModal(remoteState.showBetModal);
       setShowTrapModal(remoteState.showTrapModal);
       setShowRuleModal(remoteState.showRuleModal);
+      if (remoteState.betMode) setBetMode(remoteState.betMode);
+      if (remoteState.trapMode) setTrapMode(remoteState.trapMode);
     }
   }, [multiplayer?.lastReceivedState, isHost]);
 
@@ -68,10 +70,11 @@ export function useGameState(multiplayer = null) {
     if (multiplayer && isHost && syncState) {
       syncState({
         setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds,
-        popup, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal
+        popup, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal,
+        betMode, trapMode
       });
     }
-  }, [setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds, popup, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal, isHost, syncState]);
+  }, [setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds, popup, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal, betMode, trapMode, isHost, syncState]);
 
 
   // AUTO-REMOVE DISCONNECTED PLAYERS (Host only)
