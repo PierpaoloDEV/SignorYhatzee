@@ -5,6 +5,7 @@ export default function DiceArea({ state }) {
 
   const isBetMandatory = betMode === "OBBLIGATORIA" || activeRules.some(r => r.key === "mandatory_bet");
 
+
   return (
     <>
       <div className="dice-row">
@@ -22,7 +23,7 @@ export default function DiceArea({ state }) {
 
       <button
         className={`btn btn-primary roll-btn ${rollsLeft === 0 || !isMyTurn || (isBetMandatory && rollsLeft === 3 && !bet) ? "disabled" : ""}`}
-        onClick={rollDice}
+        onClick={() => rollDice()}
         disabled={rollsLeft === 0 || rolling || !isMyTurn || (isBetMandatory && rollsLeft === 3 && !bet)}
       >
         {rolling ? "⏳ Lancio..." : (isBetMandatory && rollsLeft === 3 && !bet) ? "⚠️ Scommetti" : "🎲 Lancia i dadi"}

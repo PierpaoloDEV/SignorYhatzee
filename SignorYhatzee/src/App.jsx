@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useGameState } from "./hooks/useGameState";
 import { useMultiplayer } from "./hooks/useMultiplayer";
 import SetupScreen from "./components/SetupScreen";
@@ -23,28 +23,39 @@ export default function App() {
     }
   };
 
-  // 3. Effetto per sincronizzare appMode e ricezione azioni
+  // Ref che punta sempre alle funzioni più recenti di gameState, senza causare re-render
+  const gameStateRef = useRef(gameState);
+  useEffect(() => { gameStateRef.current = gameState; });
+
+  // 3a. Transizione appMode -> 'online' quando la partita inizia
   useEffect(() => {
     if (multiplayer.roomCode && !gameState.setup && appMode !== "online") {
+      console.log('[APP] Transitioning appMode to online');
       setAppMode("online");
     }
+  }, [appMode, multiplayer.roomCode, gameState.setup]);
 
-    if (appMode === "online" && multiplayer?.isHost && multiplayer?.setOnActionReceive) {
-      multiplayer.setOnActionReceive(({ action, payload }) => {
-        try {
-          switch (action) {
-            case 'ROLL_DICE':       gameState.rollDice(); break;
-            case 'TOGGLE_HOLD':     gameState.toggleHold(payload.index); break;
-            case 'SELECT_CATEGORY': gameState.selectCategory(payload.cat); break;
-            case 'CLOSE_POPUP':     gameState.handleClosePopup(); break;
-            default: break;
-          }
-        } catch (e) {
-          console.error("Multiplayer action error:", e);
-        }
-      });
+  // 3b. Host: processa le azioni ricevute dai guest via lastReceivedAction (dep React stabile)
+  useEffect(() => {
+    if (!multiplayer.lastReceivedAction || !multiplayer.isHost) return;
+    const { action, payload } = multiplayer.lastReceivedAction;
+    console.log('[APP HOST] Processing received action:', action, payload);
+    try {
+      switch (action) {
+        case 'ROLL_DICE':       gameStateRef.current.rollDice(true); break;
+        case 'TOGGLE_HOLD':     gameStateRef.current.toggleHold(payload?.index, true); break;
+        case 'SELECT_CATEGORY': gameStateRef.current.selectCategory(payload?.cat, true); break;
+        case 'CLOSE_POPUP':     gameStateRef.current.handleClosePopup(); break;
+        case 'SELECT_TRAP':     gameStateRef.current.selectTrap(payload?.trapKey, true); break;
+        case 'PLACE_BET':       gameStateRef.current.placeBet(payload?.betKey, true); break;
+        case 'APPLY_RULE':      gameStateRef.current.applyRule(payload?.rule, true); break;
+        default: break;
+      }
+    } catch (e) {
+      console.error('[APP HOST] Multiplayer action error:', e);
     }
-  }, [appMode, multiplayer.roomCode, multiplayer.isHost, gameState.setup, gameState]);
+  }, [multiplayer.lastReceivedAction, multiplayer.isHost]);
+
 
   // 4. Reset automatico se si perde la stanza (es. Kick o Chiusura Host)
   useEffect(() => {

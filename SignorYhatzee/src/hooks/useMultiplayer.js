@@ -12,29 +12,41 @@ export function useMultiplayer() {
   const [isConnected, setIsConnected] = useState(false);
   const [notification, setNotification] = useState(null);
 
-  const onStateUpdateRef = useRef(null);
+  // Invece di ref+callback, esponiamo lo stato direttamente
+  const [lastReceivedState, setLastReceivedState] = useState(null);
+  const [lastReceivedAction, setLastReceivedAction] = useState(null);
+
+  // Ref per le callback (fallback legacy, mantenuto per compatibilita')
   const onActionReceiveRef = useRef(null);
 
   useEffect(() => {
     const newSocket = io(BACKEND_URL);
     setSocket(newSocket);
 
-    newSocket.on('connect', () => setIsConnected(true));
-    newSocket.on('disconnect', () => setIsConnected(false));
+    newSocket.on('connect', () => {
+      console.log('[MP] Connected, socket.id:', newSocket.id);
+      setIsConnected(true);
+    });
+    newSocket.on('disconnect', () => {
+      console.log('[MP] Disconnected');
+      setIsConnected(false);
+    });
 
     newSocket.on('room_created', ({ code }) => {
+      console.log('[MP] Room created:', code);
       setRoomCode(code);
       setIsHost(true);
     });
 
     newSocket.on('joined_successfully', ({ code, players }) => {
+      console.log('[MP] Joined room:', code, 'players:', players);
       setRoomCode(code);
       setPlayers(players);
       setIsHost(false);
     });
 
-    // In caso di migrazione host o disconnessioni
     newSocket.on('room_updated', ({ players, hostId }) => {
+      console.log('[MP] Room updated, hostId:', hostId, 'my id:', newSocket.id);
       setPlayers(players);
       if (hostId) {
         setIsHost(hostId === newSocket.id);
@@ -43,7 +55,7 @@ export function useMultiplayer() {
 
     newSocket.on('new_host', ({ message }) => {
       setIsHost(true);
-      setNotification(message); 
+      setNotification(message);
       setTimeout(() => setNotification(null), 5000);
     });
 
@@ -56,19 +68,25 @@ export function useMultiplayer() {
 
     newSocket.on('error_message', ({ message }) => {
       setError(message);
-      // Pulisci l'errore dopo un po' se non è bloccante
       if (message.includes('disconnesso') || message.includes('chiuso')) {
-         setRoomCode(null);
-         setPlayers([]);
-         setIsHost(false);
+        setRoomCode(null);
+        setPlayers([]);
+        setIsHost(false);
       }
     });
 
+    // Stato ricevuto dall'host: lo salviamo come stato React
     newSocket.on('state_updated', ({ state }) => {
-      if (onStateUpdateRef.current) onStateUpdateRef.current(state);
+      console.log('[MP] state_updated received, setup:', state?.setup, 'player:', state?.player, 'playerIds:', state?.playerIds);
+      setLastReceivedState(state);
     });
 
+    // Azione ricevuta (solo host)
     newSocket.on('receive_action', ({ action, payload, from }) => {
+      console.log('[MP HOST] receive_action:', action, 'from:', from);
+      // Aggiorniamo lo stato per triggerare useEffect nel gameState
+      setLastReceivedAction({ action, payload, from, ts: Date.now() });
+      // Chiamiamo anche il ref per compatibilita' legacy
       if (onActionReceiveRef.current) onActionReceiveRef.current({ action, payload, from });
     });
 
@@ -95,12 +113,18 @@ export function useMultiplayer() {
   const syncState = useCallback((state) => {
     if (socket && isHost && roomCode) {
       socket.emit('sync_state', { code: roomCode, state });
+    } else {
+      console.warn('[MP] syncState SKIPPED | socket:', !!socket, '| isHost:', isHost, '| roomCode:', roomCode);
     }
   }, [socket, isHost, roomCode]);
 
+
   const sendAction = useCallback((action, payload) => {
     if (socket && roomCode) {
+      console.log('[MP GUEST] sendAction:', action, 'roomCode:', roomCode);
       socket.emit('send_action', { code: roomCode, action, payload });
+    } else {
+      console.warn('[MP GUEST] sendAction SKIPPED - socket:', !!socket, 'roomCode:', roomCode);
     }
   }, [socket, roomCode]);
 
@@ -116,7 +140,6 @@ export function useMultiplayer() {
     }
   }, [socket, isHost, roomCode]);
 
-  const setOnStateUpdate = (fn) => { onStateUpdateRef.current = fn; };
   const setOnActionReceive = (fn) => { onActionReceiveRef.current = fn; };
 
   return {
@@ -132,10 +155,11 @@ export function useMultiplayer() {
     kickPlayer,
     closeRoom,
     leaveRoom,
-    setOnStateUpdate,
     setOnActionReceive,
     setError,
     notification,
-    socketId: socket?.id
+    socketId: socket?.id,
+    lastReceivedState,
+    lastReceivedAction,
   };
 }
