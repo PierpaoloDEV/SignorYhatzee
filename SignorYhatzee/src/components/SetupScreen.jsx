@@ -1,8 +1,8 @@
 import { cycleOption } from "../utils/gameHelpers";
-import { BET_OPTS, TRAP_OPTS } from "../constants";
+import { BET_OPTS, TRAP_OPTS, RULES_MODE_OPTS } from "../constants";
 
 export default function SetupScreen({ state, onBack }) {
-  const { playerNames, setPlayerNames, startGame, betMode, setBetMode, trapMode, setTrapMode } = state;
+  const { playerNames, setPlayerNames, startGame, betMode, setBetMode, trapMode, setTrapMode, rulesMode, setRulesMode } = state;
 
   return (
     <div className="app setup-screen">
@@ -50,6 +50,15 @@ export default function SetupScreen({ state, onBack }) {
               <button className="select-btn" type="button" onClick={() => setTrapMode(cycleOption(trapMode, TRAP_OPTS, -1))}>◀</button>
               <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center', flex: 1 }}>{TRAP_OPTS.find(o => o.v === trapMode)?.l}</span>
               <button className="select-btn" type="button" onClick={() => setTrapMode(cycleOption(trapMode, TRAP_OPTS, 1))}>▶</button>
+            </div>
+          </div>
+
+          <div className="setting-card">
+            <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--muted)', textTransform: 'uppercase' }}>📜 Regole Extra</label>
+            <div className="custom-select-premium">
+              <button className="select-btn" type="button" onClick={() => setRulesMode(cycleOption(rulesMode, RULES_MODE_OPTS, -1))}>◀</button>
+              <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center', flex: 1 }}>{RULES_MODE_OPTS.find(o => o.v === rulesMode)?.l}</span>
+              <button className="select-btn" type="button" onClick={() => setRulesMode(cycleOption(rulesMode, RULES_MODE_OPTS, 1))}>▶</button>
             </div>
           </div>
         </div>

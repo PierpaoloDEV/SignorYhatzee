@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CATEGORIES } from "../constants";
+import { CATEGORIES, SPECIAL_RULES } from "../constants";
 import { calculateScore, rollRandom, getCounts, hasOfAKind } from "../utils/gameHelpers";
 import { triggerHaptic, triggerSuccess } from "../utils/haptics";
 
@@ -17,6 +17,8 @@ export function useGameState(multiplayer = null) {
   const [players, setPlayers] = useState([]);
   const [betMode, setBetMode] = useState("SCELTA");
   const [trapMode, setTrapMode] = useState("VISIBILE");
+  const [rulesMode, setRulesMode] = useState("SOLO_YAHTZEE");
+  const [roundCount, setRoundCount] = useState(0);
 
   const [dice, setDice] = useState([1, 1, 1, 1, 1]);
   const [held, setHeld] = useState([false, false, false, false, false]);
@@ -63,6 +65,8 @@ export function useGameState(multiplayer = null) {
       setShowRuleModal(remoteState.showRuleModal);
       if (remoteState.betMode) setBetMode(remoteState.betMode);
       if (remoteState.trapMode) setTrapMode(remoteState.trapMode);
+      if (remoteState.rulesMode) setRulesMode(remoteState.rulesMode);
+      if (remoteState.roundCount !== undefined) setRoundCount(remoteState.roundCount);
     }
   }, [multiplayer?.lastReceivedState, isHost]);
 
@@ -71,10 +75,10 @@ export function useGameState(multiplayer = null) {
       syncState({
         setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds,
         popup, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal,
-        betMode, trapMode
+        betMode, trapMode, rulesMode, roundCount
       });
     }
-  }, [setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds, popup, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal, betMode, trapMode, isHost, syncState]);
+  }, [setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds, popup, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal, betMode, trapMode, rulesMode, roundCount, isHost, syncState]);
 
 
   // AUTO-REMOVE DISCONNECTED PLAYERS (Host only)
@@ -113,11 +117,23 @@ export function useGameState(multiplayer = null) {
       case "fourKind": return "Scegli 2 che bevono 🍻";
       case "fullHouse": return "Bevono tutti! (Compreso te) 🍻";
       case "smallStraight": {
+        if (activeRules.some(r => r.key === "social_envy")) {
+          const myScore = totalScore(player, currentScores);
+          const unlucky = players.filter((_, i) => i !== player && totalScore(i, currentScores) < myScore);
+          if (unlucky.length > 0) return "👑 Invidia Sociale – Bevono tutti quelli con meno punti di te: " + unlucky.join(", ");
+          return "👑 Invidia Sociale – Nessuno ha meno punti di te: BEVI TU! 🍺";
+        }
         const min = Math.min(...players.map((_, i) => totalScore(i, currentScores)));
         const losers = players.filter((_, i) => totalScore(i, currentScores) === min);
         return "Bevono (punteggio più basso): " + losers.join(", ");
       }
       case "largeStraight": {
+        if (activeRules.some(r => r.key === "social_envy")) {
+          const myScore = totalScore(player, currentScores);
+          const envious = players.filter((_, i) => i !== player && totalScore(i, currentScores) > myScore);
+          if (envious.length > 0) return "🎯 Invidia Sociale – Bevono tutti quelli con più punti di te: " + envious.join(", ");
+          return "🎯 Invidia Sociale – Nessuno ha più punti di te: BEVI TU! 🍺";
+        }
         const max = Math.max(...players.map((_, i) => totalScore(i, currentScores)));
         const winners = players.filter((_, i) => totalScore(i, currentScores) === max);
         return "Bevono (punteggio più alto): " + winners.join(", ");
@@ -142,6 +158,19 @@ export function useGameState(multiplayer = null) {
     }
   };
 
+  const triggerChaosRule = (currentActiveRules = activeRules) => {
+    const inactiveRules = SPECIAL_RULES.filter(sr => !currentActiveRules.some(ar => ar.key === sr.key));
+    if (inactiveRules.length > 0) {
+      const randomRule = inactiveRules[Math.floor(Math.random() * inactiveRules.length)];
+      setActiveRules(prev => [...prev, { type: "special", ...randomRule }]);
+      setPopup(`💥 MODALITÀ CAOS! 💥\n\nIl gioco ha attivato automaticamente una regola speciale:\n\n✨ ${randomRule.title} ✨\n${randomRule.desc}`);
+      setMidTurnPopup(true);
+    } else {
+      setPopup("💥 MODALITÀ CAOS! 💥\n\nIl caos ha raggiunto il suo apice! Tutte le regole speciali sono già attive! 🍻");
+      setMidTurnPopup(true);
+    }
+  };
+
   const startGame = (overrideNames = null, overrideIds = null) => {
     const namesSource = overrideNames || playerNames;
     const idsSource = overrideIds || [];
@@ -159,10 +188,19 @@ export function useGameState(multiplayer = null) {
 
     if (validNames.length < 2) return;
 
-    setPlayers(validNames);
-    setScores(validNames.map(() => ({})));
-    setPlayerIds(validIds);
+    // Shuffle player order to ensure random starting positions
+    const shuffled = validNames.map((name, i) => ({ name, id: validIds[i] })).sort(() => Math.random() - 0.5);
+    const shuffledNames = shuffled.map(p => p.name);
+    const shuffledIds = shuffled.map(p => p.id);
+    setPlayers(shuffledNames);
+    setScores(shuffledNames.map(() => ({})));
+    setPlayerIds(shuffledIds);
+    setRoundCount(0);
     setSetup(false);
+
+    if (rulesMode === "CAOS") {
+      triggerChaosRule([]);
+    }
   };
 
   const rollDice = (bypassTurnCheck = false) => {
@@ -207,6 +245,16 @@ export function useGameState(multiplayer = null) {
         if (sum > 22) {
           if (extraPopup) extraPopup += `\n\nRegola Mirsi: La somma al 3° lancio è > 22 (${sum})! BEVI! 🍺`;
           else extraPopup = `Regola Mirsi: La somma al 3° lancio è > 22 (${sum})! BEVI! 🍺`;
+        }
+      }
+
+      if (activeRules.some(r => r.key === "parity_rule")) {
+        const allEven = newDice.every(d => d % 2 === 0);
+        const allOdd = newDice.every(d => d % 2 !== 0);
+        if (allEven || allOdd) {
+          const typeStr = allEven ? "Pari" : "Dispari";
+          if (extraPopup) extraPopup += `\n\nRegola Pari o Dispari: I dadi sono tutti ${typeStr}! BEVI! 🍺`;
+          else extraPopup = `Regola Pari o Dispari: I dadi sono tutti ${typeStr}! BEVI! 🍺`;
         }
       }
 
@@ -393,10 +441,20 @@ export function useGameState(multiplayer = null) {
   };
 
   const nextTurn = () => {
-    setPlayer((p) => (p + 1) % players.length);
+    const nextP = (player + 1) % players.length;
+    const completedRound = nextP === 0;
+    const nextRound = completedRound ? roundCount + 1 : roundCount;
+
+    setPlayer(nextP);
+    if (completedRound) setRoundCount(nextRound);
     setDice([1, 1, 1, 1, 1]);
     setHeld([false, false, false, false, false]);
     setRollsLeft(3);
+
+    // Caos: attiva una regola casuale dopo 4, 8, 12 giri completi (tutti i giocatori hanno giocato)
+    if (completedRound && rulesMode === "CAOS" && (nextRound === 4 || nextRound === 8 || nextRound === 12)) {
+      triggerChaosRule();
+    }
   };
 
   // --- AZIONI MODAL MULTIPLAYER ---
@@ -495,6 +553,10 @@ export function useGameState(multiplayer = null) {
     setActiveRules([]);
     setPopup(null);
     setBet(null);
+    setRoundCount(0);
+    if (rulesMode === "CAOS") {
+      triggerChaosRule([]);
+    }
   };
 
   const resetGame = () => {
@@ -502,12 +564,24 @@ export function useGameState(multiplayer = null) {
     if (multiplayer && isHost) {
       multiplayer.closeRoom();
     }
+    // Reset all game state to its initial defaults
     setSetup(true);
     setPlayerNames(["", "", "", ""]);
+    setPlayers([]);
+    setScores([]);
+    setActiveRules([]);
+    setTraps([]);
+    setRoundCount(0);
+    setPlayer(0);
+    setDice([1, 1, 1, 1, 1]);
+    setHeld([false, false, false, false, false]);
+    setRollsLeft(3);
+    setBet(null);
+    setPopup(null);
   };
 
   return {
-    setup, playerNames, setPlayerNames, players, betMode, setBetMode, trapMode, setTrapMode,
+    setup, playerNames, setPlayerNames, players, betMode, setBetMode, trapMode, setTrapMode, rulesMode, setRulesMode,
     dice, held, rollsLeft, player, scores, rolling, popup, bet, setBet, showBetModal, setShowBetModal,
     traps, setTraps, showTrapModal, setShowTrapModal, showYahtzeeAnim, activeRules, setActiveRules, showRuleModal, setShowRuleModal,
     showManagementModal, setShowManagementModal, isHost, socketId,

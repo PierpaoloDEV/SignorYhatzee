@@ -28,10 +28,17 @@ export const TRAP_OPTS = [
   { v: "NASCOSTA", l: "NASCOSTA" }
 ];
 
+export const RULES_MODE_OPTS = [
+  { v: "SOLO_YAHTZEE", l: "SOLO CON YAHTZEE" },
+  { v: "CAOS", l: "CAOS" }
+];
+
 export const SPECIAL_RULES = [
   { key: "minguccio", title: "Regola Minguccio", desc: "Se lanci 5 dadi insieme e ne escono almeno 3 uguali bevi." },
   { key: "mirsi", title: "Regola Mirsi", desc: "Se al terzo lancio la somma dei tuoi dadi è superiore a 22 bevi." },
   { key: "mandatory_bet", title: "Scommessa Obbligatoria", desc: "La scommessa diventa obbligatoria in ogni turno." },
+  { key: "parity_rule", title: "Pari o Dispari", desc: "Se fai un lancio in cui tutti i dadi sono pari o tutti dispari, bevi." },
+  { key: "social_envy", title: "Invidia Sociale", desc: "Per le Scale: invece del singolo più alto/basso, bevono TUTTI quelli con punteggio totale maggiore (Scala Grande) o minore (Scala Piccola) del tuo." },
 ];
 
 export const CUSTOM_PART_1 = [
