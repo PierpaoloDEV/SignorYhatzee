@@ -3,6 +3,7 @@ import "./HomeCarousel.css";
 
 const GAMES = [
   { id: "yahtzee", emoji: "🎲", name: "Signor Yahtzee", tagline: "Il classico gioco dei dadi (ma con l'alcol)" },
+  { id: "ludo", emoji: "🎯", name: "Signor Ludo", tagline: "Il gioco da tavolo per 4 giocatori" },
   { id: "drago", emoji: "🐉", name: "Signor Drago", tagline: "Prossimamente" },
 ];
 
