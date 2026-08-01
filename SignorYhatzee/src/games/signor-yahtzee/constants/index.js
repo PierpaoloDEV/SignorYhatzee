@@ -49,7 +49,7 @@ export const SPECIAL_RULES = [
   { key: "seven_devils", title: "Sette Diavoli", desc: "Se la somma dei tuoi dadi dopo un lancio è un multiplo di 7, bevono tutti!" },
   { key: "copycat", title: "Copycat", desc: "Se scegli la stessa categoria dell'ultimo giocatore, bevi." },
   { key: "auto_trap", title: "Trappola Automatica", desc: "Ogni volta che segni punti (>0) su una categoria, viene automaticamente piazzata una trappola su di essa." },
-  { key: "counter_trap", title: "Controtrappola", desc: "Quando cadi in una trappola, sei tu a scegliere chi beve invece di bere tu." },
+  { key: "counter_trap", title: "Counterspell", desc: "Quando cadi in una trappola, sei tu a scegliere chi beve invece di bere tu." },
 ];
 
 export const CUSTOM_PART_1 = [
