@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { cycleOption } from "../utils/gameHelpers";
 import { BET_OPTS, TRAP_OPTS, RULES_MODE_OPTS } from "../constants";
 
-export default function LobbyScreen({ multiplayer, onLocalPlay, onOnlinePlay, state }) {
+export default function LobbyScreen({ multiplayer, onLocalPlay, onOnlinePlay, state, onExit }) {
   const { 
     hostRoom, 
     joinRoom, 
@@ -40,7 +40,8 @@ export default function LobbyScreen({ multiplayer, onLocalPlay, onOnlinePlay, st
   if (mode === 'choice') {
     return (
       <div className="app lobby">
-        <h1 className="title neon-text">🎲 SignorYahtzee</h1>
+        {onExit && <button className="back-btn" onClick={onExit}>← Altri giochi</button>}
+        <h1 className="title">🎲 SignorYahtzee</h1>
         <div className="glass-panel lobby-options">
           <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => {
             onLocalPlay();
