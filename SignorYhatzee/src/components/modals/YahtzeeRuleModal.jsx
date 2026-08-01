@@ -6,31 +6,39 @@ export default function YahtzeeRuleModal({ state }) {
   const [ruleTab, setRuleTab] = useState("custom");
   const [customRuleDraft, setCustomRuleDraft] = useState({ part1: "", part2: "", part3: "" });
   const [options, setOptions] = useState({ part1: [], part2: "", part3: [] });
+  const [randomSpecialRules, setRandomSpecialRules] = useState([]);
 
   // Effetto per randomizzare le opzioni ogni volta che si apre il modal
   useEffect(() => {
-    if (showRuleModal && ruleTab === "custom") {
-      const getRand = (arr, n) => {
-        const shuffled = [...arr].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, n);
-      };
+    if (showRuleModal) {
+      // Randomizza opzioni custom
+      if (ruleTab === "custom") {
+        const getRand = (arr, n) => {
+          const shuffled = [...arr].sort(() => 0.5 - Math.random());
+          return shuffled.slice(0, n);
+        };
 
-      const rand1 = getRand(CUSTOM_PART_1, 3);
-      const rand2 = getRand(CUSTOM_PART_2, 1)[0];
-      const rand3 = getRand(CUSTOM_PART_3, 3);
+        const rand1 = getRand(CUSTOM_PART_1, 3);
+        const rand2 = getRand(CUSTOM_PART_2, 1)[0];
+        const rand3 = getRand(CUSTOM_PART_3, 3);
 
-      setOptions({
-        part1: rand1,
-        part2: rand2,
-        part3: rand3
-      });
+        setOptions({
+          part1: rand1,
+          part2: rand2,
+          part3: rand3
+        });
 
-      // Seleziona il primo di default tra quelli usciti random
-      setCustomRuleDraft({
-        part1: rand1[0],
-        part2: rand2,
-        part3: rand3[0].key
-      });
+        setCustomRuleDraft({
+          part1: rand1[0],
+          part2: rand2,
+          part3: rand3[0].key
+        });
+      }
+
+      // Scegli 3 regole speciali random tra quelle NON ancora attive
+      const inactive = SPECIAL_RULES.filter(sr => !activeRules.some(ar => ar.key === sr.key));
+      const shuffled = [...inactive].sort(() => 0.5 - Math.random());
+      setRandomSpecialRules(shuffled.slice(0, 3));
     }
   }, [showRuleModal, ruleTab]);
 
@@ -111,21 +119,26 @@ export default function YahtzeeRuleModal({ state }) {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {SPECIAL_RULES.map(sr => {
-              const isActive = activeRules.some(r => r.key === sr.key);
-              return (
+            <p style={{ fontSize: '0.85rem', color: 'var(--muted)', textAlign: 'center', marginBottom: '4px' }}>
+              🎲 3 regole estratte a caso tra quelle disponibili
+            </p>
+            {randomSpecialRules.length === 0 ? (
+              <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: '0.9rem' }}>
+                Tutte le regole speciali sono già attive! 🏆
+              </p>
+            ) : (
+              randomSpecialRules.map(sr => (
                 <button
                   key={sr.key}
-                  className={`btn ${isActive ? 'btn-primary' : 'btn-outline'}`}
-                  style={{ padding: '10px', display: 'flex', flexDirection: 'column', textAlign: 'left', opacity: isActive ? 0.5 : 1 }}
-                  disabled={isActive}
+                  className="btn btn-outline"
+                  style={{ padding: '10px', display: 'flex', flexDirection: 'column', textAlign: 'left' }}
                   onClick={() => applyRule({ type: "special", ...sr })}
                 >
-                  <strong style={{ fontSize: '1rem' }}>{sr.title} {isActive && "✅"}</strong>
-                  <span style={{ fontSize: '0.8rem', whiteSpace: 'normal', color: isActive ? '#fff' : 'var(--muted)' }}>{sr.desc}</span>
+                  <strong style={{ fontSize: '1rem' }}>{sr.title}</strong>
+                  <span style={{ fontSize: '0.8rem', whiteSpace: 'normal', color: 'var(--muted)' }}>{sr.desc}</span>
                 </button>
-              );
-            })}
+              ))
+            )}
           </div>
         )}
       </div>
