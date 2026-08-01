@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { CUSTOM_PART_1, CUSTOM_PART_2, CUSTOM_PART_3, SPECIAL_RULES } from "../../constants";
 
 export default function YahtzeeRuleModal({ state }) {
-  const { showRuleModal, setShowRuleModal, activeRules, setActiveRules, nextTurn } = state;
+  const { showRuleModal, activeRules, isMyTurn, players, player, applyRule } = state;
   const [ruleTab, setRuleTab] = useState("custom");
   const [customRuleDraft, setCustomRuleDraft] = useState({ part1: "", part2: "", part3: "" });
   const [options, setOptions] = useState({ part1: [], part2: "", part3: [] });
@@ -35,6 +35,20 @@ export default function YahtzeeRuleModal({ state }) {
   }, [showRuleModal, ruleTab]);
 
   if (!showRuleModal) return null;
+
+  // I giocatori non di turno vedono solo il messaggio di attesa
+  if (!isMyTurn) {
+    return (
+      <div className="popup-overlay" style={{ zIndex: 3000 }}>
+        <div className="popup bet-popup" style={{ width: '90%', maxWidth: '400px' }}>
+          <h2 style={{ marginBottom: '15px' }}>📜 Crea Nuova Regola</h2>
+          <p style={{ textAlign: 'center', margin: '30px 0', color: 'var(--muted)', fontSize: '0.95rem' }}>
+            ⏳ In attesa di <b>{players?.[player] ?? '...'}</b> per creare la regola...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="popup-overlay" style={{ zIndex: 3000 }}>
@@ -88,13 +102,11 @@ export default function YahtzeeRuleModal({ state }) {
 
             <button className="btn btn-primary" style={{ marginTop: '10px' }} onClick={() => {
               const label = CUSTOM_PART_3.find(c => c.key === customRuleDraft.part3)?.label;
-              setActiveRules(prev => [...prev, {
+              applyRule({
                 type: "custom",
                 ...customRuleDraft,
                 label: `${customRuleDraft.part1} ${customRuleDraft.part2} ${label}`
-              }]);
-              setShowRuleModal(false);
-              nextTurn();
+              });
             }}>Applica Regola</button>
           </div>
         ) : (
@@ -107,11 +119,7 @@ export default function YahtzeeRuleModal({ state }) {
                   className={`btn ${isActive ? 'btn-primary' : 'btn-outline'}`}
                   style={{ padding: '10px', display: 'flex', flexDirection: 'column', textAlign: 'left', opacity: isActive ? 0.5 : 1 }}
                   disabled={isActive}
-                  onClick={() => {
-                    setActiveRules(prev => [...prev, { type: "special", ...sr }]);
-                    setShowRuleModal(false);
-                    nextTurn();
-                  }}
+                  onClick={() => applyRule({ type: "special", ...sr })}
                 >
                   <strong style={{ fontSize: '1rem' }}>{sr.title} {isActive && "✅"}</strong>
                   <span style={{ fontSize: '0.8rem', whiteSpace: 'normal', color: isActive ? '#fff' : 'var(--muted)' }}>{sr.desc}</span>

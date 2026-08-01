@@ -9,8 +9,8 @@ import RulesInfoModal from "./modals/RulesInfoModal";
 import GameManagementModal from "./modals/GameManagementModal";
 import { CATEGORIES } from "../constants";
 
-export default function GameScreen({ state }) {
-  const { players, player, rollsLeft, bet, betMode, traps, trapMode, showYahtzeeAnim, setShowManagementModal } = state;
+export default function GameScreen({ state, onBack }) {
+  const { players, player, rollsLeft, bet, betMode, traps, trapMode, showYahtzeeAnim, setShowManagementModal, isHost, resetGame } = state;
 
   return (
     <div className="app game-screen">
@@ -22,20 +22,48 @@ export default function GameScreen({ state }) {
         {/* Pannello sinistro: header, dadi, pulsanti */}
         <div className="game-left">
           <header className="game-header">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <h1 className="title">🎲 SignorYahtzee</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '15px' }}>
               <button 
-                className="btn btn-outline" 
-                style={{ minWidth: 'auto', padding: '8px 12px', fontSize: '1.2rem' }}
-                onClick={() => setShowManagementModal(true)}
+                className="back-btn" 
+                style={{ position: 'static', margin: 0, padding: '8px 12px' }}
+                onClick={() => {
+                  if (window.confirm("Abbandonare la partita e tornare al menu?")) {
+                    if (onBack) onBack();
+                    resetGame();
+                  }
+                }}
               >
-                ⚙️
+                ←
               </button>
+              <h1 className="title" style={{ flex: 1, textAlign: 'left', margin: 0 }}>SignorYahtzee</h1>
+              {(!state.isMultiplayer || isHost) && (
+                <button 
+                  className="btn btn-outline" 
+                  style={{ minWidth: 'auto', padding: '8px 12px', fontSize: '1.2rem' }}
+                  onClick={() => setShowManagementModal(true)}
+                >
+                  ⚙️
+                </button>
+              )}
             </div>
             <div className="turn-info">
-              <span className="turn-player">{players[player]}</span>
+              <span className="turn-player">{players[player]} {state.isMyTurn ? '(Tu)' : ''}</span>
               <span className="turn-rolls">Lanci rimasti: {rollsLeft}</span>
             </div>
+            {!state.isMyTurn && (
+              <div className="waiting-indicator" style={{ 
+                background: 'rgba(255,255,255,0.05)', 
+                padding: '10px', 
+                borderRadius: '10px',
+                textAlign: 'center',
+                margin: '10px 0',
+                fontSize: '0.9rem',
+                color: 'var(--muted)',
+                border: '1px solid rgba(255,255,255,0.1)'
+              }}>
+                ⏳ In attesa del turno di <b>{players[player]}</b>...
+              </div>
+            )}
           </header>
 
           <DiceArea state={state} />

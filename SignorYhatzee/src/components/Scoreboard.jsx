@@ -2,7 +2,7 @@ import { CATEGORIES } from "../constants";
 import { calculateScore } from "../utils/gameHelpers";
 
 export default function Scoreboard({ state }) {
-  const { players, player, scores, dice, rollsLeft, traps, trapMode, selectCategory, totalScore, getUpperScore } = state;
+  const { players, player, scores, dice, rollsLeft, traps, trapMode, selectCategory, totalScore, getUpperScore, isMyTurn } = state;
 
   const renderRow = (cat) => {
     const matchingTrapsCount = traps.filter(t => t === cat.key).length;
@@ -27,9 +27,9 @@ export default function Scoreboard({ state }) {
               <td key={i} className="active-cell">
                 <button
                   className="score-btn"
-                  onClick={() => canSelect && selectCategory(cat.key)}
-                  disabled={!canSelect}
-                  style={{ opacity: canSelect ? 1 : 0.4, cursor: canSelect ? 'pointer' : 'not-allowed' }}
+                  onClick={() => canSelect && isMyTurn && selectCategory(cat.key)}
+                  disabled={!canSelect || !isMyTurn}
+                  style={{ opacity: (canSelect && isMyTurn) ? 1 : 0.4, cursor: (canSelect && isMyTurn) ? 'pointer' : 'not-allowed' }}
                 >
                   +{preview}
                 </button>
@@ -62,9 +62,9 @@ export default function Scoreboard({ state }) {
         <thead>
           <tr>
             <th>Combinazione</th>
-            {players.map((p, i) => (
-              <th key={i} className={i === player ? "active" : ""}>
-                {p}
+            {players.map((name, i) => (
+              <th key={`${name}-${i}`} className={i === player ? "active" : ""}>
+                {name}
                 <div className="table-pts">{totalScore(i)} pt</div>
               </th>
             ))}
