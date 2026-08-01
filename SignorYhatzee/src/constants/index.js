@@ -38,7 +38,7 @@ export const SPECIAL_RULES = [
   { key: "mirsi", title: "Regola Mirsi", desc: "Se al terzo lancio la somma dei tuoi dadi è superiore a 22 bevi." },
   { key: "mandatory_bet", title: "Scommessa Obbligatoria", desc: "La scommessa diventa obbligatoria in ogni turno." },
   { key: "parity_rule", title: "Pari o Dispari", desc: "Se fai un lancio in cui tutti i dadi sono pari o tutti dispari, bevi." },
-  { key: "social_envy", title: "Invidia Sociale", desc: "Per le Scale: invece del singolo più alto/basso, bevono TUTTI quelli con punteggio totale maggiore (Scala Grande) o minore (Scala Piccola) del tuo." },
+  { key: "inverted_bet", title: "Inversione", desc: "La scommessa si inverte: se la vinci bevi tu, altrimenti dai un sorso" },
 ];
 
 export const CUSTOM_PART_1 = [

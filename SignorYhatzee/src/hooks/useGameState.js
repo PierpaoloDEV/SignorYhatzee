@@ -34,6 +34,7 @@ export function useGameState(multiplayer = null) {
   const [traps, setTraps] = useState([]);
   const [showTrapModal, setShowTrapModal] = useState(false);
   const [showYahtzeeAnim, setShowYahtzeeAnim] = useState(false);
+    const [nicoPenaltyApplied, setNicoPenaltyApplied] = useState(false);
 
   const [activeRules, setActiveRules] = useState([]);
   const [pendingYahtzee, setPendingYahtzee] = useState(false);
@@ -257,6 +258,11 @@ export function useGameState(multiplayer = null) {
           else extraPopup = `Regola Pari o Dispari: I dadi sono tutti ${typeStr}! BEVI! 🍺`;
         }
       }
+        if (activeRules.some(r => r.key === "nico_rule") && !nicoPenaltyApplied && rolledCount >= 4 && rollsLeft < 3) {
+          const nicoMsg = "⚡ Regola Nico: Hai rilanciato 4 o più dadi – BEVI! 🍺";
+          extraPopup = extraPopup ? `${extraPopup}\n\n${nicoMsg}` : nicoMsg;
+          setNicoPenaltyApplied(true);
+        }
 
       if (extraPopup) {
         setPopup(extraPopup);
@@ -349,13 +355,23 @@ export function useGameState(multiplayer = null) {
       popupParts.push("🎉 BONUS SBLOCCATO! (+35 pt)\nScegli 3 persone (o la stessa 3 volte) da far bere! 🍻");
     }
 
-    if (bet) {
-      if (cat === bet && value > 0) {
-        popupParts.push("🎯 SCOMMESSA VINTA!\nScegli chi beve un sorso extra!");
-      } else {
-        popupParts.push("❌ SCOMMESSA PERSA!\nBevi tu un sorso extra!");
+      // Gestione scommessa con possibile regola Inversione
+      if (bet) {
+        const inverted = activeRules.some(r => r.key === "inverted_bet");
+        if (cat === bet && value > 0) {
+          if (inverted) {
+            popupParts.push("🎯 SCOMMESSA VINTA! (Inversione) – BEVI TU! 🍺");
+          } else {
+            popupParts.push("🎯 SCOMMESSA VINTA!\nScegli chi beve un sorso extra!");
+          }
+        } else {
+          if (inverted) {
+            popupParts.push("❌ SCOMMESSA PERSA! (Inversione) – BEVI UN SORSO EXTRA!");
+          } else {
+            popupParts.push("❌ SCOMMESSA PERSA!\nBevi tu un sorso extra!");
+          }
+        }
       }
-    }
 
     const matchingTrapsCount = traps.filter(t => t === cat).length;
     if (matchingTrapsCount > 0 && value > 0) {
@@ -450,6 +466,7 @@ export function useGameState(multiplayer = null) {
     setDice([1, 1, 1, 1, 1]);
     setHeld([false, false, false, false, false]);
     setRollsLeft(3);
+    setNicoPenaltyApplied(false);
 
     // Caos: attiva una regola casuale dopo 4, 8, 12 giri completi (tutti i giocatori hanno giocato)
     if (completedRound && rulesMode === "CAOS" && (nextRound === 4 || nextRound === 8 || nextRound === 12)) {
