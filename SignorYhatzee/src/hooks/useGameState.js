@@ -17,6 +17,7 @@ export function useGameState(multiplayer = null) {
   const [players, setPlayers] = useState([]);
   const [betMode, setBetMode] = useState("SCELTA");
   const [trapMode, setTrapMode] = useState("VISIBILE");
+  const [betWithTrap, setBetWithTrap] = useState(false);
   const [rulesMode, setRulesMode] = useState("SOLO_YAHTZEE");
   const [roundCount, setRoundCount] = useState(0);
 
@@ -29,6 +30,7 @@ export function useGameState(multiplayer = null) {
   const [rolling, setRolling] = useState(false);
 
   const [popup, setPopup] = useState(null);
+  const [popupDrinkers, setPopupDrinkers] = useState(null);
   const [bet, setBet] = useState(null);
   const [showBetModal, setShowBetModal] = useState(false);
   const [traps, setTraps] = useState([]);
@@ -42,6 +44,7 @@ export function useGameState(multiplayer = null) {
   const [showRuleModal, setShowRuleModal] = useState(false);
   const [showManagementModal, setShowManagementModal] = useState(false);
   const [midTurnPopup, setMidTurnPopup] = useState(false);
+  const [triggeredRulesThisTurn, setTriggeredRulesThisTurn] = useState([]);
 
   // --- MULTIPLAYER SYNC (GUEST): reagisce a lastReceivedState come dep React stabile ---
   useEffect(() => {
@@ -58,6 +61,7 @@ export function useGameState(multiplayer = null) {
       setPlayerIds(remoteState.playerIds || []);
       setRolling(remoteState.rolling);
       setPopup(remoteState.popup);
+      setPopupDrinkers(remoteState.popupDrinkers ?? null);
       setBet(remoteState.bet);
       setTraps(remoteState.traps);
       setActiveRules(remoteState.activeRules);
@@ -66,6 +70,7 @@ export function useGameState(multiplayer = null) {
       setShowRuleModal(remoteState.showRuleModal);
       if (remoteState.betMode) setBetMode(remoteState.betMode);
       if (remoteState.trapMode) setTrapMode(remoteState.trapMode);
+      if (remoteState.betWithTrap !== undefined) setBetWithTrap(remoteState.betWithTrap);
       if (remoteState.rulesMode) setRulesMode(remoteState.rulesMode);
       if (remoteState.roundCount !== undefined) setRoundCount(remoteState.roundCount);
     }
@@ -75,11 +80,11 @@ export function useGameState(multiplayer = null) {
     if (multiplayer && isHost && syncState) {
       syncState({
         setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds,
-        popup, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal,
-        betMode, trapMode, rulesMode, roundCount
+        popup, popupDrinkers, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal,
+        betMode, trapMode, rulesMode, roundCount, betWithTrap
       });
     }
-  }, [setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds, popup, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal, betMode, trapMode, rulesMode, roundCount, isHost, syncState]);
+  }, [setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds, popup, popupDrinkers, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal, betMode, trapMode, rulesMode, roundCount, betWithTrap, isHost, syncState]);
 
 
   // AUTO-REMOVE DISCONNECTED PLAYERS (Host only)
@@ -159,6 +164,77 @@ export function useGameState(multiplayer = null) {
     }
   };
 
+  // Helper: returns an object { name: sipCount } for a given drink rule category
+  const getDrinkers = (cat, currentScores = scores) => {
+    const addDrinker = (map, name, count = 1) => {
+      map[name] = (map[name] || 0) + count;
+    };
+    const result = {};
+
+    switch (cat) {
+      case "threeKind":
+        // "Scegli chi beve" - not determinable
+        return null;
+      case "fourKind":
+        // "Scegli 2 che bevono" - not determinable
+        return null;
+      case "fullHouse":
+        // Bevono tutti (compreso te)
+        players.forEach(name => addDrinker(result, name));
+        return result;
+      case "smallStraight": {
+        if (activeRules.some(r => r.key === "social_envy")) {
+          const myScore = totalScore(player, currentScores);
+          const unlucky = players.filter((_, i) => i !== player && totalScore(i, currentScores) < myScore);
+          if (unlucky.length > 0) {
+            unlucky.forEach(name => addDrinker(result, name));
+          } else {
+            addDrinker(result, players[player]);
+          }
+          return result;
+        }
+        const min = Math.min(...players.map((_, i) => totalScore(i, currentScores)));
+        const losers = players.filter((_, i) => totalScore(i, currentScores) === min);
+        losers.forEach(name => addDrinker(result, name));
+        return result;
+      }
+      case "largeStraight": {
+        if (activeRules.some(r => r.key === "social_envy")) {
+          const myScore = totalScore(player, currentScores);
+          const envious = players.filter((_, i) => i !== player && totalScore(i, currentScores) > myScore);
+          if (envious.length > 0) {
+            envious.forEach(name => addDrinker(result, name));
+          } else {
+            addDrinker(result, players[player]);
+          }
+          return result;
+        }
+        const max = Math.max(...players.map((_, i) => totalScore(i, currentScores)));
+        const winners = players.filter((_, i) => totalScore(i, currentScores) === max);
+        winners.forEach(name => addDrinker(result, name));
+        return result;
+      }
+      case "yahtzee":
+        // Bevono tutti gli altri
+        players.forEach((name, i) => { if (i !== player) addDrinker(result, name); });
+        return result;
+      case "chance": {
+        const currentChance = currentScores[player]?.chance || 0;
+        const othersWithChance = players
+          .map((name, i) => ({ name, i, v: currentScores[i]?.chance }))
+          .filter(({ i, v }) => i !== player && v !== undefined && v > 0);
+        const losers = othersWithChance.filter(({ v }) => v < currentChance).map(({ name }) => name);
+        if (losers.length > 0) {
+          losers.forEach(name => addDrinker(result, name));
+        } else {
+          addDrinker(result, players[player]);
+        }
+        return result;
+      }
+      default: return null;
+    }
+  };
+
   const triggerChaosRule = (currentActiveRules = activeRules) => {
     const inactiveRules = SPECIAL_RULES.filter(sr => !currentActiveRules.some(ar => ar.key === sr.key));
     if (inactiveRules.length > 0) {
@@ -199,7 +275,7 @@ export function useGameState(multiplayer = null) {
     setRoundCount(0);
     setSetup(false);
 
-    if (rulesMode === "CAOS") {
+    if (rulesMode.startsWith("CAOS")) {
       triggerChaosRule([]);
     }
   };
@@ -237,36 +313,76 @@ export function useGameState(multiplayer = null) {
       }
 
       let extraPopup = null;
-      if (activeRules.some(r => r.key === "minguccio") && rolledCount === 5) {
-        if (hasOfAKind(newCounts, 3)) extraPopup = "Regola Minguccio: Hai lanciato 5 dadi insieme e hai fatto almeno Tris! BEVI! 🍺";
+      let midTurnEventCount = 0;
+      const midTurnDrinkers = {};
+      const addMidDrinker = (name, count = 1) => { midTurnDrinkers[name] = (midTurnDrinkers[name] || 0) + count; };
+      const newlyTriggered = [];
+
+      if (activeRules.some(r => r.key === "minguccio") && rolledCount === 5 && !triggeredRulesThisTurn.includes("minguccio")) {
+        if (hasOfAKind(newCounts, 3)) {
+          extraPopup = "Regola Minguccio: Hai lanciato 5 dadi insieme e hai fatto almeno Tris! BEVI! 🍺";
+          addMidDrinker(players[player]);
+          midTurnEventCount++;
+          newlyTriggered.push("minguccio");
+        }
       }
 
-      if (activeRules.some(r => r.key === "mirsi") && rollsLeft === 1) {
+      if (activeRules.some(r => r.key === "simo_rule") && rolledCount === 5 && !triggeredRulesThisTurn.includes("simo_rule")) {
+        const unique = [...new Set(newDice)].sort((a, b) => a - b);
+        let hasConsecutive = false;
+        for (let ci = 0; ci < unique.length - 2; ci++) {
+          if (unique[ci + 1] === unique[ci] + 1 && unique[ci + 2] === unique[ci] + 2) {
+            hasConsecutive = true;
+            break;
+          }
+        }
+        if (hasConsecutive) {
+          const simoMsg = "Regola Simo: Ti è uscito un \"Tris\" (tre numeri consecutivi)! Scegli chi beve! 🍺";
+          extraPopup = extraPopup ? `${extraPopup}\n\n${simoMsg}` : simoMsg;
+          midTurnEventCount++;
+          newlyTriggered.push("simo_rule");
+        }
+      }
+
+      if (activeRules.some(r => r.key === "mirsi") && rollsLeft === 1 && !triggeredRulesThisTurn.includes("mirsi")) {
         const sum = newDice.reduce((acc, v) => acc + v, 0);
         if (sum > 22) {
           if (extraPopup) extraPopup += `\n\nRegola Mirsi: La somma al 3° lancio è > 22 (${sum})! BEVI! 🍺`;
           else extraPopup = `Regola Mirsi: La somma al 3° lancio è > 22 (${sum})! BEVI! 🍺`;
+          addMidDrinker(players[player]);
+          midTurnEventCount++;
+          newlyTriggered.push("mirsi");
         }
       }
 
-      if (activeRules.some(r => r.key === "parity_rule")) {
+      if (activeRules.some(r => r.key === "parity_rule") && !triggeredRulesThisTurn.includes("parity_rule")) {
         const allEven = newDice.every(d => d % 2 === 0);
         const allOdd = newDice.every(d => d % 2 !== 0);
         if (allEven || allOdd) {
           const typeStr = allEven ? "Pari" : "Dispari";
           if (extraPopup) extraPopup += `\n\nRegola Pari o Dispari: I dadi sono tutti ${typeStr}! BEVI! 🍺`;
           else extraPopup = `Regola Pari o Dispari: I dadi sono tutti ${typeStr}! BEVI! 🍺`;
+          addMidDrinker(players[player]);
+          midTurnEventCount++;
+          newlyTriggered.push("parity_rule");
         }
       }
-        if (activeRules.some(r => r.key === "nico_rule") && !nicoPenaltyApplied && rolledCount >= 4 && rollsLeft < 3) {
+        if (activeRules.some(r => r.key === "nico_rule") && !nicoPenaltyApplied && rolledCount >= 4 && rollsLeft < 3 && !triggeredRulesThisTurn.includes("nico_rule")) {
           const nicoMsg = "⚡ Regola Nico: Hai rilanciato 4 o più dadi – BEVI! 🍺";
           extraPopup = extraPopup ? `${extraPopup}\n\n${nicoMsg}` : nicoMsg;
+          addMidDrinker(players[player]);
+          midTurnEventCount++;
           setNicoPenaltyApplied(true);
+          newlyTriggered.push("nico_rule");
         }
 
       if (extraPopup) {
         setPopup(extraPopup);
+        setPopupDrinkers(Object.keys(midTurnDrinkers).length > 0 ? midTurnDrinkers : null);
         setMidTurnPopup(true);
+        if (newlyTriggered.length > 0) {
+          setTriggeredRulesThisTurn(prev => [...prev, ...newlyTriggered]);
+        }
       }
 
       setRollsLeft((r) => r - 1);
@@ -345,10 +461,15 @@ export function useGameState(multiplayer = null) {
     });
     setScores(newScores);
 
+    // Build drinkers map for popup header
+    const drinkers = {};
+    const addDrinkerToMap = (name, count = 1) => { drinkers[name] = (drinkers[name] || 0) + count; };
+
     let popupParts = [];
 
     if (value === 0) {
       popupParts.push("💀 HAI SEGNATO 0: BEVI 2! 🍺🍺");
+      addDrinkerToMap(players[player], 2);
     }
 
     if (bonusAchieved) {
@@ -361,15 +482,23 @@ export function useGameState(multiplayer = null) {
         if (cat === bet && value > 0) {
           if (inverted) {
             popupParts.push("🎯 SCOMMESSA VINTA! (Inversione) – BEVI TU! 🍺");
+            addDrinkerToMap(players[player]);
           } else {
             popupParts.push("🎯 SCOMMESSA VINTA!\nScegli chi beve un sorso extra!");
           }
         } else {
           if (inverted) {
             popupParts.push("❌ SCOMMESSA PERSA! (Inversione) – BEVI UN SORSO EXTRA!");
+            addDrinkerToMap(players[player]);
           } else {
             popupParts.push("❌ SCOMMESSA PERSA!\nBevi tu un sorso extra!");
+            addDrinkerToMap(players[player]);
           }
+        }
+        
+        if (betWithTrap) {
+          popupParts.push(`🚨 Scommessa con Trappola:\nÈ stata piazzata una trappola automatica su ${CATEGORIES.find(c => c.key === bet)?.label || bet}!`);
+          setTraps(prev => [...prev, bet]);
         }
       }
 
@@ -380,6 +509,7 @@ export function useGameState(multiplayer = null) {
       } else {
         popupParts.push(`🚨 SEI CADUTO IN ${matchingTrapsCount} TRAPPOLE! 🚨\nBevi ${matchingTrapsCount} sorsi extra!`);
       }
+      addDrinkerToMap(players[player], matchingTrapsCount);
       setTraps(prev => prev.filter(t => t !== cat));
     }
 
@@ -396,10 +526,31 @@ export function useGameState(multiplayer = null) {
           dynamicPart1 = dynamicPart1.replace(/Il giocatore con meno punti/i, `Il giocatore con meno punti (${losers.join(", ")})`);
         }
 
-        if (r.part2 === "quando fai punti su" && value > 0) {
-          popupParts.push(`📜 Regola Custom attivata:\n${dynamicPart1}`);
-        } else if (r.part2 === "quando NON fai punti su (0 pt)" && value === 0) {
-          popupParts.push(`📜 Regola Custom attivata (0 punti):\n${dynamicPart1}`);
+        const ruleTriggered = (r.part2 === "quando fai punti su" && value > 0) || (r.part2 === "quando NON fai punti su (0 pt)" && value === 0);
+        if (ruleTriggered) {
+          if (r.part2 === "quando fai punti su" && value > 0) {
+            popupParts.push(`📜 Regola Custom attivata:\n${dynamicPart1}`);
+          } else {
+            popupParts.push(`📜 Regola Custom attivata (0 punti):\n${dynamicPart1}`);
+          }
+          // Extract drinkers from custom rules
+          const p1Lower = r.part1.toLowerCase();
+          if (p1Lower.includes("bevono tutti tranne te")) {
+            players.forEach((name, i) => { if (i !== player) addDrinkerToMap(name); });
+          } else if (p1Lower.includes("bevono tutti")) {
+            players.forEach(name => addDrinkerToMap(name));
+          } else if (p1Lower.includes("bevi tu il doppio")) {
+            addDrinkerToMap(players[player], 2);
+          } else if (p1Lower.includes("bevi tu")) {
+            addDrinkerToMap(players[player]);
+          } else if (p1Lower.includes("più punti")) {
+            const max = Math.max(...players.map((_, i) => totalScore(i, newScores)));
+            players.filter((_, i) => totalScore(i, newScores) === max).forEach(name => addDrinkerToMap(name));
+          } else if (p1Lower.includes("meno punti")) {
+            const min = Math.min(...players.map((_, i) => totalScore(i, newScores)));
+            players.filter((_, i) => totalScore(i, newScores) === min).forEach(name => addDrinkerToMap(name));
+          }
+          // "Scegli chi beve" is not determinable, skip
         }
       }
     });
@@ -410,6 +561,11 @@ export function useGameState(multiplayer = null) {
     let rule = "";
     if (value > 0 || isExtraYahtzee || cat === "chance") {
       rule = getDrinkRule(ruleKey, newScores);
+      // Merge drink rule drinkers
+      const ruleDrinkers = getDrinkers(ruleKey, newScores);
+      if (ruleDrinkers) {
+        Object.entries(ruleDrinkers).forEach(([name, count]) => addDrinkerToMap(name, count));
+      }
     }
     if (rule) popupParts.push("Regola Turno:\n" + rule);
 
@@ -417,6 +573,7 @@ export function useGameState(multiplayer = null) {
 
     if (popupParts.length > 0) {
       setPopup(popupParts.join("\n\n"));
+      setPopupDrinkers(Object.keys(drinkers).length > 0 ? drinkers : null);
       setPendingTrap(triggeredTrapSet);
       setPendingYahtzee(isYahtzeeTriggered);
     } else {
@@ -437,6 +594,7 @@ export function useGameState(multiplayer = null) {
       return;
     }
     setPopup(null);
+    setPopupDrinkers(null);
 
     setBet(null);
 
@@ -467,10 +625,14 @@ export function useGameState(multiplayer = null) {
     setHeld([false, false, false, false, false]);
     setRollsLeft(3);
     setNicoPenaltyApplied(false);
+    setTriggeredRulesThisTurn([]);
 
-    // Caos: attiva una regola casuale dopo 4, 8, 12 giri completi (tutti i giocatori hanno giocato)
-    if (completedRound && rulesMode === "CAOS" && (nextRound === 4 || nextRound === 8 || nextRound === 12)) {
-      triggerChaosRule();
+    // Caos: attiva una regola casuale in base all'intervallo scelto
+    if (completedRound && rulesMode.startsWith("CAOS")) {
+      const interval = parseInt(rulesMode.split("_")[1]) || 4; // fallback
+      if (nextRound > 0 && nextRound % interval === 0) {
+        triggerChaosRule();
+      }
     }
   };
 
@@ -558,6 +720,7 @@ export function useGameState(multiplayer = null) {
     setHeld([false, false, false, false, false]);
     setRollsLeft(3);
     setBet(null);
+    setTriggeredRulesThisTurn([]);
   };
 
   const restartGame = () => {
@@ -571,7 +734,8 @@ export function useGameState(multiplayer = null) {
     setPopup(null);
     setBet(null);
     setRoundCount(0);
-    if (rulesMode === "CAOS") {
+    setTriggeredRulesThisTurn([]);
+    if (rulesMode.startsWith("CAOS")) {
       triggerChaosRule([]);
     }
   };
@@ -595,11 +759,12 @@ export function useGameState(multiplayer = null) {
     setRollsLeft(3);
     setBet(null);
     setPopup(null);
+    setTriggeredRulesThisTurn([]);
   };
 
   return {
-    setup, playerNames, setPlayerNames, players, betMode, setBetMode, trapMode, setTrapMode, rulesMode, setRulesMode,
-    dice, held, rollsLeft, player, scores, rolling, popup, bet, setBet, showBetModal, setShowBetModal,
+    setup, playerNames, setPlayerNames, players, betMode, setBetMode, trapMode, setTrapMode, rulesMode, setRulesMode, betWithTrap, setBetWithTrap,
+    dice, held, rollsLeft, player, scores, rolling, popup, popupDrinkers, bet, setBet, showBetModal, setShowBetModal,
     traps, setTraps, showTrapModal, setShowTrapModal, showYahtzeeAnim, activeRules, setActiveRules, showRuleModal, setShowRuleModal,
     showManagementModal, setShowManagementModal, isHost, socketId,
     multiplayerPlayers: multiplayer?.players || [],

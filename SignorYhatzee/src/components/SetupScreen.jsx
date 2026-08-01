@@ -61,6 +61,19 @@ export default function SetupScreen({ state, onBack }) {
               <button className="select-btn" type="button" onClick={() => setRulesMode(cycleOption(rulesMode, RULES_MODE_OPTS, 1))}>▶</button>
             </div>
           </div>
+
+          <div className="setting-card">
+            <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--muted)', textTransform: 'uppercase' }}>🪤 Scommessa con Trappola</label>
+            <div 
+              className="custom-select-premium" 
+              style={{ cursor: 'pointer', justifyContent: 'center', background: state.betWithTrap ? 'rgba(239,68,68,0.2)' : 'rgba(0,0,0,0.3)', borderColor: state.betWithTrap ? 'var(--red)' : 'rgba(255,255,255,0.1)' }} 
+              onClick={() => state.setBetWithTrap(!state.betWithTrap)}
+            >
+              <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center', color: state.betWithTrap ? 'var(--red)' : 'inherit' }}>
+                {state.betWithTrap ? "ATTIVA (ON)" : "DISATTIVA (OFF)"}
+              </span>
+            </div>
+          </div>
         </div>
 
         <button className="btn btn-primary" style={{ width: '100%', padding: '16px' }} onClick={() => startGame()}>

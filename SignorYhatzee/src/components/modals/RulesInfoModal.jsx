@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SPECIAL_RULES } from "../../constants";
 
 const GENERAL_RULES = [
   { cat: "Generale", rule: "Se metti 0 su un punteggio: BEVI 2! 🍺🍺" },
@@ -115,6 +116,19 @@ export default function RulesInfoModal({ state }) {
               </div>
             )}
 
+
+            {/* Tutte le regole speciali disponibili */}
+            <h3 style={{ color: 'var(--accent)', marginTop: '20px', marginBottom: '10px', fontSize: '0.95rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Tutte le regole speciali disponibili
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
+              {SPECIAL_RULES.map((r, i) => (
+                <div key={r.key} style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '10px', padding: '8px 12px', textAlign: 'left' }}>
+                  <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>⭐ {r.title}: </span>
+                  <span style={{ fontSize: '0.9rem' }}>{r.desc}</span>
+                </div>
+              ))}
+            </div>
 
             <button
               className="btn btn-outline"
