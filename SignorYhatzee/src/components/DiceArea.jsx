@@ -29,7 +29,7 @@ export default function DiceArea({ state }) {
         {rolling ? "⏳ Lancio..." : (isBetMandatory && rollsLeft === 3 && !bet) ? "⚠️ Scommetti" : "🎲 Lancia i dadi"}
       </button>
 
-      {betMode !== "NO" && rollsLeft === 3 && !bet && isMyTurn && (
+      {(betMode !== "NO" || isBetMandatory) && rollsLeft === 3 && !bet && isMyTurn && (
         <button className="btn btn-bet" onClick={() => setShowBetModal(true)}>
           🎰 Piazza Scommessa
         </button>

@@ -416,6 +416,8 @@ export function useGameState(multiplayer = null) {
       return;
     }
     if (rollsLeft === 3) return;
+    if (rolling) return;
+    if (showTrapModal || showRuleModal || showBetModal) return;
 
     if (!scores[player] || scores[player][cat] !== undefined) return;
 
@@ -479,26 +481,28 @@ export function useGameState(multiplayer = null) {
       // Gestione scommessa con possibile regola Inversione
       if (bet) {
         const inverted = activeRules.some(r => r.key === "inverted_bet");
-        if (cat === bet && value > 0) {
+        const betWon = (cat === bet && value > 0);
+        
+        if (betWon) {
           if (inverted) {
             popupParts.push("🎯 SCOMMESSA VINTA! (Inversione) – BEVI TU! 🍺");
             addDrinkerToMap(players[player]);
           } else {
             popupParts.push("🎯 SCOMMESSA VINTA!\nScegli chi beve un sorso extra!");
           }
+          
+          // Scommessa con Trappola: si attiva solo se la scommessa è vinta
+          if (betWithTrap) {
+            popupParts.push(`🚨 Scommessa con Trappola:\nÈ stata piazzata una trappola automatica su ${CATEGORIES.find(c => c.key === bet)?.label || bet}!`);
+            setTraps(prev => [...prev, bet]);
+          }
         } else {
           if (inverted) {
-            popupParts.push("❌ SCOMMESSA PERSA! (Inversione) – BEVI UN SORSO EXTRA!");
-            addDrinkerToMap(players[player]);
+            popupParts.push("❌ SCOMMESSA PERSA! (Inversione) – Scegli chi beve un sorso extra!");
           } else {
             popupParts.push("❌ SCOMMESSA PERSA!\nBevi tu un sorso extra!");
             addDrinkerToMap(players[player]);
           }
-        }
-        
-        if (betWithTrap) {
-          popupParts.push(`🚨 Scommessa con Trappola:\nÈ stata piazzata una trappola automatica su ${CATEGORIES.find(c => c.key === bet)?.label || bet}!`);
-          setTraps(prev => [...prev, bet]);
         }
       }
 
