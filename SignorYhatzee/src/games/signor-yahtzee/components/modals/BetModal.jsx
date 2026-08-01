@@ -5,7 +5,7 @@ export default function BetModal({ state }) {
 
   if (!showBetModal) return null;
 
-  const isBetMandatory = betMode === "OBBLIGATORIA" || activeRules.some(r => r.key === "mandatory_bet");
+  const isBetMandatory = betMode === "OBBLIGATORIA";
 
   return (
     <div className="popup-overlay">

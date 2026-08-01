@@ -45,6 +45,7 @@ export function useGameState(multiplayer = null) {
   const [showManagementModal, setShowManagementModal] = useState(false);
   const [midTurnPopup, setMidTurnPopup] = useState(false);
   const [triggeredRulesThisTurn, setTriggeredRulesThisTurn] = useState([]);
+  const [lastPlayedCategory, setLastPlayedCategory] = useState(null);
 
   // --- MULTIPLAYER SYNC (GUEST): reagisce a lastReceivedState come dep React stabile ---
   useEffect(() => {
@@ -73,6 +74,7 @@ export function useGameState(multiplayer = null) {
       if (remoteState.betWithTrap !== undefined) setBetWithTrap(remoteState.betWithTrap);
       if (remoteState.rulesMode) setRulesMode(remoteState.rulesMode);
       if (remoteState.roundCount !== undefined) setRoundCount(remoteState.roundCount);
+      if (remoteState.lastPlayedCategory !== undefined) setLastPlayedCategory(remoteState.lastPlayedCategory ?? null);
     }
   }, [multiplayer?.lastReceivedState, isHost]);
 
@@ -81,10 +83,10 @@ export function useGameState(multiplayer = null) {
       syncState({
         setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds,
         popup, popupDrinkers, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal,
-        betMode, trapMode, rulesMode, roundCount, betWithTrap
+        betMode, trapMode, rulesMode, roundCount, betWithTrap, lastPlayedCategory
       });
     }
-  }, [setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds, popup, popupDrinkers, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal, betMode, trapMode, rulesMode, roundCount, betWithTrap, isHost, syncState]);
+  }, [setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds, popup, popupDrinkers, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal, betMode, trapMode, rulesMode, roundCount, betWithTrap, lastPlayedCategory, isHost, syncState]);
 
 
   // AUTO-REMOVE DISCONNECTED PLAYERS (Host only)
@@ -367,6 +369,17 @@ export function useGameState(multiplayer = null) {
           newlyTriggered.push("parity_rule");
         }
       }
+
+      if (activeRules.some(r => r.key === "seven_devils") && !triggeredRulesThisTurn.includes("seven_devils")) {
+        const diceSum = newDice.reduce((acc, v) => acc + v, 0);
+        if (diceSum % 7 === 0) {
+          const sevenMsg = `😈 Sette Diavoli: La somma dei dadi è ${diceSum} (multiplo di 7)! BEVONO TUTTI! 🍺`;
+          extraPopup = extraPopup ? `${extraPopup}\n\n${sevenMsg}` : sevenMsg;
+          players.forEach(name => addMidDrinker(name));
+          midTurnEventCount++;
+          newlyTriggered.push("seven_devils");
+        }
+      }
         if (activeRules.some(r => r.key === "nico_rule") && !nicoPenaltyApplied && rolledCount >= 4 && rollsLeft < 3 && !triggeredRulesThisTurn.includes("nico_rule")) {
           const nicoMsg = "⚡ Regola Nico: Hai rilanciato 4 o più dadi – BEVI! 🍺";
           extraPopup = extraPopup ? `${extraPopup}\n\n${nicoMsg}` : nicoMsg;
@@ -416,6 +429,8 @@ export function useGameState(multiplayer = null) {
       return;
     }
     if (rollsLeft === 3) return;
+    if (rolling) return;
+    if (showTrapModal || showRuleModal || showBetModal) return;
 
     if (!scores[player] || scores[player][cat] !== undefined) return;
 
@@ -467,6 +482,12 @@ export function useGameState(multiplayer = null) {
 
     let popupParts = [];
 
+    // Regola Copycat: stessa categoria dell'ultimo giocatore
+    if (activeRules.some(r => r.key === "copycat") && lastPlayedCategory && cat === lastPlayedCategory) {
+      popupParts.push("🐱 Copycat! Hai scelto la stessa categoria dell'ultimo giocatore! BEVI! 🍺");
+      addDrinkerToMap(players[player]);
+    }
+
     if (value === 0) {
       popupParts.push("💀 HAI SEGNATO 0: BEVI 2! 🍺🍺");
       addDrinkerToMap(players[player], 2);
@@ -479,38 +500,57 @@ export function useGameState(multiplayer = null) {
       // Gestione scommessa con possibile regola Inversione
       if (bet) {
         const inverted = activeRules.some(r => r.key === "inverted_bet");
-        if (cat === bet && value > 0) {
+        const betWon = (cat === bet && value > 0);
+        
+        if (betWon) {
           if (inverted) {
             popupParts.push("🎯 SCOMMESSA VINTA! (Inversione) – BEVI TU! 🍺");
             addDrinkerToMap(players[player]);
           } else {
             popupParts.push("🎯 SCOMMESSA VINTA!\nScegli chi beve un sorso extra!");
           }
+          
+          // Scommessa con Trappola: si attiva solo se la scommessa è vinta
+          if (betWithTrap) {
+            popupParts.push(`🚨 Scommessa con Trappola:\nÈ stata piazzata una trappola automatica su ${CATEGORIES.find(c => c.key === bet)?.label || bet}!`);
+            setTraps(prev => [...prev, bet]);
+          }
         } else {
           if (inverted) {
-            popupParts.push("❌ SCOMMESSA PERSA! (Inversione) – BEVI UN SORSO EXTRA!");
-            addDrinkerToMap(players[player]);
+            popupParts.push("❌ SCOMMESSA PERSA! (Inversione) – Scegli chi beve un sorso extra!");
           } else {
             popupParts.push("❌ SCOMMESSA PERSA!\nBevi tu un sorso extra!");
             addDrinkerToMap(players[player]);
           }
         }
-        
-        if (betWithTrap) {
-          popupParts.push(`🚨 Scommessa con Trappola:\nÈ stata piazzata una trappola automatica su ${CATEGORIES.find(c => c.key === bet)?.label || bet}!`);
-          setTraps(prev => [...prev, bet]);
-        }
       }
 
     const matchingTrapsCount = traps.filter(t => t === cat).length;
     if (matchingTrapsCount > 0 && value > 0) {
-      if (matchingTrapsCount === 1) {
-        popupParts.push("🚨 SEI CADUTO NELLA TRAPPOLA! 🚨\nBevi 1 sorso extra!");
+      const isCounterTrap = activeRules.some(r => r.key === "counter_trap");
+      if (isCounterTrap) {
+        if (matchingTrapsCount === 1) {
+          popupParts.push("🚨 TRAPPOLA! (Controtrappola) 🚨\nScegli TU chi beve 1 sorso!");
+        } else {
+          popupParts.push(`🚨 ${matchingTrapsCount} TRAPPOLE! (Controtrappola) 🚨\nScegli TU chi beve ${matchingTrapsCount} sorsi!`);
+        }
+        // Con controtrappola non aggiungiamo il current player ai drinkers
       } else {
-        popupParts.push(`🚨 SEI CADUTO IN ${matchingTrapsCount} TRAPPOLE! 🚨\nBevi ${matchingTrapsCount} sorsi extra!`);
+        if (matchingTrapsCount === 1) {
+          popupParts.push("🚨 SEI CADUTO NELLA TRAPPOLA! 🚨\nBevi 1 sorso extra!");
+        } else {
+          popupParts.push(`🚨 SEI CADUTO IN ${matchingTrapsCount} TRAPPOLE! 🚨\nBevi ${matchingTrapsCount} sorsi extra!`);
+        }
+        addDrinkerToMap(players[player], matchingTrapsCount);
       }
-      addDrinkerToMap(players[player], matchingTrapsCount);
       setTraps(prev => prev.filter(t => t !== cat));
+    }
+
+    // Regola Trappola Automatica: piazza una trappola sulla categoria appena segnata (se punti > 0)
+    if (activeRules.some(r => r.key === "auto_trap") && value > 0) {
+      const catLabel = CATEGORIES.find(c => c.key === cat)?.label || cat;
+      popupParts.push(`🔫 Trappola Automatica: hai segnato su ${catLabel}! Una trappola è stata piazzata per gli altri!`);
+      setTraps(prev => [...prev, cat]);
     }
 
     activeRules.forEach(r => {
@@ -568,6 +608,8 @@ export function useGameState(multiplayer = null) {
       }
     }
     if (rule) popupParts.push("Regola Turno:\n" + rule);
+
+    setLastPlayedCategory(cat);
 
     const triggeredTrapSet = (trapMode !== "NO" && cat === "fourKind" && value >= 18);
 
@@ -735,6 +777,7 @@ export function useGameState(multiplayer = null) {
     setBet(null);
     setRoundCount(0);
     setTriggeredRulesThisTurn([]);
+    setLastPlayedCategory(null);
     if (rulesMode.startsWith("CAOS")) {
       triggerChaosRule([]);
     }
@@ -760,6 +803,7 @@ export function useGameState(multiplayer = null) {
     setBet(null);
     setPopup(null);
     setTriggeredRulesThisTurn([]);
+    setLastPlayedCategory(null);
   };
 
   return {
