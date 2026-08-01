@@ -638,12 +638,16 @@ export function useGameState(multiplayer = null) {
     setPopup(null);
     setPopupDrinkers(null);
 
-    setBet(null);
+    // NOTA: setBet(null) viene spostato DOPO il controllo midTurnPopup
+    // per non azzerare la scommessa quando scatta una regola speciale mid-turn
 
     if (midTurnPopup) {
       setMidTurnPopup(false);
       return;
     }
+
+    // Fine turno effettivo: ora azzeriamo la scommessa
+    setBet(null);
 
     if (pendingTrap) {
       setShowTrapModal(true);

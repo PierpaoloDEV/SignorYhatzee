@@ -3,17 +3,17 @@ export default function DrinkPopup({ state }) {
 
   if (!popup) return null;
 
-  // Build the "Bevono:" header from popupDrinkers
+  // Build the "Beve:" / "Bevono:" header from popupDrinkers
   const drinkersHeader = (() => {
     if (!popupDrinkers || Object.keys(popupDrinkers).length === 0) return null;
-
-    const totalSips = Object.values(popupDrinkers).reduce((a, b) => a + b, 0);
-    if (totalSips < 2) return null;
 
     const entries = Object.entries(popupDrinkers)
       .map(([name, count]) => count > 1 ? `${name} x${count}` : name);
 
-    return `🍻 Bevono: ${entries.join(', ')}`;
+    if (entries.length === 0) return null;
+
+    const prefix = entries.length === 1 && !entries[0].includes('x') ? '🍻 Beve:' : '🍻 Bevono:';
+    return `${prefix} ${entries.join(', ')}`;
   })();
 
   return (

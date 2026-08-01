@@ -9,6 +9,8 @@ import RulesInfoModal from "./modals/RulesInfoModal";
 import GameManagementModal from "./modals/GameManagementModal";
 import { CATEGORIES } from "../constants";
 
+const tn = (name, max = 12) => name?.length > max ? name.slice(0, max) + '…' : (name || '');
+
 export default function GameScreen({ state, onBack }) {
   const { players, player, rollsLeft, bet, betMode, betWithTrap, traps, trapMode, showYahtzeeAnim, setShowManagementModal, isHost, resetGame } = state;
 
@@ -47,7 +49,7 @@ export default function GameScreen({ state, onBack }) {
               )}
             </div>
             <div className="turn-info">
-              <span className="turn-player">{players[player]} {state.isMyTurn ? '(Tu)' : ''}</span>
+              <span className="turn-player" title={players[player]}>{tn(players[player])} {state.isMyTurn ? '(Tu)' : ''}</span>
               <span className="turn-rolls">Lanci rimasti: {rollsLeft}</span>
             </div>
             {!state.isMyTurn && (
@@ -61,7 +63,7 @@ export default function GameScreen({ state, onBack }) {
                 color: 'var(--muted)',
                 border: '1px solid rgba(255,255,255,0.1)'
               }}>
-                ⏳ In attesa del turno di <b>{players[player]}</b>...
+                ⏳ In attesa del turno di <b title={players[player]}>{tn(players[player])}</b>...
               </div>
             )}
           </header>

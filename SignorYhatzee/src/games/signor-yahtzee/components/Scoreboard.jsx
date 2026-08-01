@@ -1,6 +1,8 @@
 import { CATEGORIES } from "../constants";
 import { calculateScore } from "../utils/gameHelpers";
 
+const tn = (name, max = 10) => name?.length > max ? name.slice(0, max) + '…' : (name || '');
+
 export default function Scoreboard({ state }) {
   const { players, player, scores, dice, rollsLeft, traps, trapMode, selectCategory, totalScore, getUpperScore, isMyTurn } = state;
 
@@ -63,8 +65,8 @@ export default function Scoreboard({ state }) {
           <tr>
             <th>Combinazione</th>
             {players.map((name, i) => (
-              <th key={`${name}-${i}`} className={i === player ? "active" : ""}>
-                {name}
+              <th key={`${name}-${i}`} className={i === player ? "active" : ""} title={name}>
+                {tn(name)}
                 <div className="table-pts">{totalScore(i)} pt</div>
               </th>
             ))}
