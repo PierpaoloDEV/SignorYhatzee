@@ -10,7 +10,7 @@ import GameManagementModal from "./modals/GameManagementModal";
 import { CATEGORIES } from "../constants";
 
 export default function GameScreen({ state, onBack }) {
-  const { players, player, rollsLeft, bet, betMode, traps, trapMode, showYahtzeeAnim, setShowManagementModal, isHost, resetGame } = state;
+  const { players, player, rollsLeft, bet, betMode, betWithTrap, traps, trapMode, showYahtzeeAnim, setShowManagementModal, isHost, resetGame } = state;
 
   return (
     <div className="app game-screen">
@@ -70,7 +70,7 @@ export default function GameScreen({ state, onBack }) {
 
           {bet && (
             <div className="active-bet">
-              Scommessa attiva: <span className="cat-score">{CATEGORIES.find(c => c.key === bet)?.label}</span>
+              Scommessa attiva: <span className="cat-score">{CATEGORIES.find(c => c.key === bet)?.label}</span>{betWithTrap && <span style={{ marginLeft: '6px' }}>{'\uD83D\uDCA3'}</span>}
             </div>
           )}
 

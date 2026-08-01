@@ -142,7 +142,7 @@ export default function LobbyScreen({ multiplayer, onLocalPlay, onOnlinePlay, st
                 </div>
 
                 <div className="setting-card" style={{ flex: 1, minWidth: '140px' }}>
-                  <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--muted)', textTransform: 'uppercase' }}>🪤 Scomm. + Trappola</label>
+                  <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--muted)', textTransform: 'uppercase' }}>💣 Scomm. + Trappola</label>
                   <div 
                     className="custom-select-premium" 
                     style={{ cursor: isHost ? 'pointer' : 'default', justifyContent: 'center', background: state.betWithTrap ? 'rgba(239,68,68,0.2)' : 'rgba(0,0,0,0.3)', borderColor: state.betWithTrap ? 'var(--red)' : 'rgba(255,255,255,0.1)' }} 

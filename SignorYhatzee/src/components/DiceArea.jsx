@@ -3,7 +3,7 @@ import { DICE_FACES } from "../constants";
 export default function DiceArea({ state }) {
   const { dice, held, rolling, toggleHold, rollsLeft, rollDice, betMode, bet, setShowBetModal, activeRules, isMyTurn } = state;
 
-  const isBetMandatory = betMode === "OBBLIGATORIA" || activeRules.some(r => r.key === "mandatory_bet");
+  const isBetMandatory = betMode === "OBBLIGATORIA";
 
 
   return (

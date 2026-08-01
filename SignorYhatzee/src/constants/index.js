@@ -39,7 +39,6 @@ export const RULES_MODE_OPTS = [
 export const SPECIAL_RULES = [
   { key: "minguccio", title: "Regola Minguccio", desc: "Se lanci 5 dadi insieme e ne escono almeno 3 uguali bevi." },
   { key: "mirsi", title: "Regola Mirsi", desc: "Se al terzo lancio la somma dei tuoi dadi è superiore a 22 bevi." },
-  { key: "mandatory_bet", title: "Scommessa Obbligatoria", desc: "La scommessa diventa obbligatoria in ogni turno." },
   { key: "parity_rule", title: "Pari o Dispari", desc: "Se fai un lancio in cui tutti i dadi sono pari o tutti dispari, bevi." },
   { key: "inverted_bet", title: "Inversione", desc: "La scommessa si inverte: se la vinci bevi tu, altrimenti dai un sorso" },
   { key: "simo_rule", title: "Regola Simo", desc: "Se lanci 5 dadi insieme ed escono 3 numeri consecutivi scegli chi beve." },
