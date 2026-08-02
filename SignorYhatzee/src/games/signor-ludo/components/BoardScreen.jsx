@@ -219,7 +219,10 @@ export default function BoardScreen({ state, onExit }) {
   const {
     tokens,
     currentPlayer,
-    diceValue,
+    diceValues,
+    usedDice,
+    activeDieIndex,
+    setActiveDie,
     rolling,
     hasRolled,
     extraRoll,
@@ -380,53 +383,78 @@ export default function BoardScreen({ state, onExit }) {
   }
 
   return (
-    <div className="ludo-game-screen">
-      {/* Header */}
-      <div style={{ width: "100%", maxWidth: BOARD_SIZE, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8, position: "relative" }}>
-        <button className="back-btn" onClick={onExit} style={{ position: "absolute", left: 0, margin: 0, padding: "8px 12px", zIndex: 10 }}>← Esci</button>
-        <div className="ludo-turn-indicator" style={{ borderColor: TOKEN_COLORS[currentColor] }}>
-          <span style={{ color: TOKEN_COLORS[currentColor], fontWeight: 700, fontSize: "1rem" }}>
-            {COLOR_EMOJIS[currentColor]} {currentName}
-          </span>
-          {extraRoll && <span className="ludo-extra-badge">🎲 Rilancia!</span>}
-          {finishOrder.length > 0 && (
-            <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-              Finito: {finishOrder.map(c => COLOR_EMOJIS[c]).join(" ")}
+    <div className="ludo-game-screen app">
+      <div className="glass-panel" style={{ width: "100%", maxWidth: BOARD_SIZE + 40, padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+        {/* Header */}
+        <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+          <button className="back-btn" onClick={onExit} style={{ position: "absolute", left: 0, margin: 0, padding: "8px 12px", zIndex: 10 }}>← Esci</button>
+          <div className="ludo-turn-indicator" style={{ borderColor: TOKEN_COLORS[currentColor] }}>
+            <span style={{ color: TOKEN_COLORS[currentColor], fontWeight: 700, fontSize: "1rem" }}>
+              {COLOR_EMOJIS[currentColor]} {currentName}
             </span>
-          )}
+            {extraRoll && <span className="ludo-extra-badge">🎲 Rilancia!</span>}
+            {finishOrder.length > 0 && (
+              <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
+                Finito: {finishOrder.map(c => COLOR_EMOJIS[c]).join(" ")}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Board */}
-      <div style={{ position: "relative", width: BOARD_SIZE, height: BOARD_SIZE, margin: "0 auto" }}>
-        {grid}
-      </div>
-
-      {/* Capture message */}
-      {captureMsg && (
-        <div className="ludo-capture-msg" onClick={() => setCaptureMsg(null)}>
-          {captureMsg}
+        {/* Board */}
+        <div style={{ position: "relative", width: BOARD_SIZE, height: BOARD_SIZE, margin: "0 auto" }}>
+          {grid}
         </div>
-      )}
 
-      {/* Selectable hint */}
-      {selectableTokens.length > 1 && hasRolled && (
-        <div className="ludo-hint">👆 Tocca una pedina evidenziata per muoverla</div>
-      )}
+        {/* Capture message */}
+        {captureMsg && (
+          <div className="ludo-capture-msg" onClick={() => setCaptureMsg(null)}>
+            {captureMsg}
+          </div>
+        )}
 
-      {/* Dice + Roll */}
-      <div className="ludo-dice-area">
-        <div className={`ludo-dice ${rolling ? "ludo-dice-rolling" : ""}`} style={{ borderColor: TOKEN_COLORS[currentColor] }}>
-          {rolling ? "🎲" : diceValue ? ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"][diceValue] : "🎲"}
+        {/* Selectable hint */}
+        {selectableTokens.length > 0 && hasRolled && (
+          <div className="ludo-hint">👆 Tocca una pedina evidenziata per muoverla col dado attivo</div>
+        )}
+
+        {/* Dice + Roll */}
+        <div className="ludo-dice-area" style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            {rolling ? (
+              <div className="ludo-dice ludo-dice-rolling" style={{ borderColor: TOKEN_COLORS[currentColor] }}>🎲</div>
+            ) : diceValues.length > 0 ? (
+              diceValues.map((val, idx) => {
+                const isActive = activeDieIndex === idx;
+                const isUsed = usedDice[idx];
+                return (
+                  <div
+                    key={idx}
+                    className={`ludo-dice ${isActive && !isUsed ? "ludo-dice-active" : ""} ${isUsed ? "ludo-dice-used" : ""}`}
+                    style={{
+                      borderColor: isActive && !isUsed ? TOKEN_COLORS[currentColor] : "rgba(255,255,255,0.2)",
+                      opacity: isUsed ? 0.3 : 1,
+                      cursor: isUsed ? "default" : "pointer"
+                    }}
+                    onClick={() => setActiveDie(idx)}
+                  >
+                    {["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"][val]}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="ludo-dice" style={{ borderColor: TOKEN_COLORS[currentColor] }}>🎲</div>
+            )}
+          </div>
+          <button
+            className="btn btn-primary ludo-roll-btn"
+            style={{ background: `linear-gradient(135deg, ${TOKEN_COLORS[currentColor]}, ${TOKEN_COLORS[currentColor]}aa)`, flexShrink: 0 }}
+            disabled={rolling || hasRolled}
+            onClick={rollDice}
+          >
+            {rolling ? "..." : hasRolled ? "In attesa..." : "Lancia"}
+          </button>
         </div>
-        <button
-          className="btn btn-primary ludo-roll-btn"
-          style={{ background: `linear-gradient(135deg, ${TOKEN_COLORS[currentColor]}, ${TOKEN_COLORS[currentColor]}aa)` }}
-          disabled={rolling || hasRolled}
-          onClick={rollDice}
-        >
-          {rolling ? "..." : hasRolled ? "In attesa..." : "Lancia dado"}
-        </button>
       </div>
     </div>
   );

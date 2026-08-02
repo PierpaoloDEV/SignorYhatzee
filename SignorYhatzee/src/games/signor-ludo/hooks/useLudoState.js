@@ -42,14 +42,18 @@ export const HOME_ENTRY = { red: 51, blue: 12, yellow: 25, green: 38 };
  *    100–104    → in home stretch (100 = first cell, 104 = last cell before finish)
  *    105        → finished (safe in center)
  */
-function makeTokens(color) {
-  return [0, 1, 2, 3].map((id) => ({ id: `${color}-${id}`, color, pos: -1 }));
+function makeTokens(color, count = 4) {
+  const arr = [];
+  for(let i = 0; i < count; i++) {
+    arr.push({ id: `${color}-${i}`, color, pos: -1 });
+  }
+  return arr;
 }
 
-function initTokens() {
+function initTokens(count = 4) {
   const tokens = {};
   COLORS.forEach((c) => {
-    tokens[c] = makeTokens(c);
+    tokens[c] = makeTokens(c, count);
   });
   return tokens;
 }
@@ -110,9 +114,13 @@ function isValidMove(token, diceValue) {
 export function useLudoState() {
   const [screen, setScreen] = useState("setup"); // "setup" | "game" | "over"
   const [playerNames, setPlayerNames] = useState(["", "", "", ""]);
-  const [tokens, setTokens] = useState(initTokens());
+  const [pawnsCount, setPawnsCount] = useState(4);
+  const [diceCount, setDiceCount] = useState(1);
+  const [tokens, setTokens] = useState(initTokens(4));
   const [currentPlayer, setCurrentPlayer] = useState(0); // 0–3
-  const [diceValue, setDiceValue] = useState(null);
+  const [diceValues, setDiceValues] = useState([]);
+  const [usedDice, setUsedDice] = useState([]);
+  const [activeDieIndex, setActiveDieIndex] = useState(0);
   const [rolling, setRolling] = useState(false);
   const [hasRolled, setHasRolled] = useState(false);
   const [extraRoll, setExtraRoll] = useState(false);
@@ -130,9 +138,11 @@ export function useLudoState() {
       n.trim() !== "" ? n.trim() : COLOR_LABELS[COLORS[i]]
     );
     setPlayerNames(names);
-    setTokens(initTokens());
+    setTokens(initTokens(pawnsCount));
     setCurrentPlayer(0);
-    setDiceValue(null);
+    setDiceValues([]);
+    setUsedDice([]);
+    setActiveDieIndex(0);
     setHasRolled(false);
     setExtraRoll(false);
     setSelectableTokens([]);
@@ -145,9 +155,11 @@ export function useLudoState() {
   const resetGame = () => {
     setScreen("setup");
     setPlayerNames(["", "", "", ""]);
-    setTokens(initTokens());
+    setTokens(initTokens(pawnsCount));
     setCurrentPlayer(0);
-    setDiceValue(null);
+    setDiceValues([]);
+    setUsedDice([]);
+    setActiveDieIndex(0);
     setHasRolled(false);
     setExtraRoll(false);
     setSelectableTokens([]);
@@ -158,27 +170,60 @@ export function useLudoState() {
 
   // ─── Roll dice ───────────────────────────────────────────────────────────────
 
+  const updateSelectableTokens = (activeIdx, currentDice = diceValues, currentTokens = tokens) => {
+    if (currentDice.length === 0 || usedDice[activeIdx]) {
+      setSelectableTokens([]);
+      return;
+    }
+    const val = currentDice[activeIdx];
+    const myTokens = currentTokens[COLORS[currentPlayer]];
+    const movable = myTokens.filter((t) => isValidMove(t, val));
+    setSelectableTokens(movable.map((t) => t.id));
+  };
+
+  const setActiveDie = (index) => {
+    if (usedDice[index]) return;
+    setActiveDieIndex(index);
+    updateSelectableTokens(index);
+  };
+
   const rollDice = () => {
     if (rolling || hasRolled) return;
     setRolling(true);
     setCaptureMsg(null);
 
     setTimeout(() => {
-      const value = Math.floor(Math.random() * 6) + 1;
-      setDiceValue(value);
+      const vals = [];
+      for(let i=0; i<diceCount; i++) {
+        vals.push(Math.floor(Math.random() * 6) + 1);
+      }
+      setDiceValues(vals);
+      setUsedDice(vals.map(() => false));
+      setActiveDieIndex(0);
       setRolling(false);
       setHasRolled(true);
 
-      // Determine which tokens can move
+      // Determine which tokens can move for the first die
+      const val = vals[0];
       const myTokens = tokens[COLORS[currentPlayer]];
-      const movable = myTokens.filter((t) => isValidMove(t, value));
+      const movable = myTokens.filter((t) => isValidMove(t, val));
 
       if (movable.length === 0) {
-        // No moves possible → pass turn
-        setTimeout(() => advanceTurn(value === 6, false), 800);
-      } else if (movable.length === 1) {
-        // Auto-select if only one option
-        setTimeout(() => moveToken(movable[0].id, value, tokens), 400);
+        // If first die has no moves, check the second one if it exists
+        if (vals.length > 1) {
+          const movable2 = myTokens.filter((t) => isValidMove(t, vals[1]));
+          if (movable2.length === 0) {
+            setTimeout(() => advanceTurn(vals.includes(6), false), 800);
+            return;
+          } else {
+            setActiveDieIndex(1);
+            setSelectableTokens(movable2.map(t => t.id));
+          }
+        } else {
+          setTimeout(() => advanceTurn(val === 6, false), 800);
+        }
+      } else if (movable.length === 1 && vals.length === 1) {
+        setTimeout(() => moveToken(movable[0].id, val, tokens, 0, [false], vals), 400);
       } else {
         setSelectableTokens(movable.map((t) => t.id));
       }
@@ -187,7 +232,7 @@ export function useLudoState() {
 
   // ─── Move token ─────────────────────────────────────────────────────────────
 
-  const moveToken = (tokenId, dice = diceValue, currentTokens = tokens) => {
+  const moveToken = (tokenId, dice = diceValues[activeDieIndex], currentTokens = tokens, activeIdx = activeDieIndex, currentUsed = usedDice, currentVals = diceValues) => {
     if (!tokenId) return;
     setSelectableTokens([]);
 
@@ -205,7 +250,7 @@ export function useLudoState() {
       ),
     };
 
-    // Check capture (only on outer track, not on safe cells)
+    // Check capture
     let captured = null;
     if (newPos >= 0 && newPos <= 51 && !SAFE_CELLS.has(newPos)) {
       COLORS.forEach((c) => {
@@ -213,18 +258,13 @@ export function useLudoState() {
         newTokens[c] = newTokens[c].map((t) => {
           if (t.pos === newPos) {
             captured = c;
-            return { ...t, pos: -1 }; // send home
+            return { ...t, pos: -1 };
           }
           return t;
         });
       });
     }
 
-    // Check if all 4 tokens of this color are finished
-    const allFinished = newTokens[color].every((t) =>
-      t.pos === 105 || (t.id === tokenId ? newPos === 105 : false)
-    );
-    // Re-check properly
     const myNewTokens = newTokens[color].map((t, i) =>
       i === tokenIdx ? { ...t, pos: newPos } : t
     );
@@ -236,32 +276,55 @@ export function useLudoState() {
       setCaptureMsg(`💥 ${COLOR_LABELS[color]} ha catturato una pedina di ${COLOR_LABELS[captured]}!`);
     }
 
-    // Handle finish
+    let gameOver = false;
     if (newPos === 105) {
-      const newFinishOrder = finishOrder.includes(color)
-        ? finishOrder
-        : [...finishOrder, color];
+      const newFinishOrder = finishOrder.includes(color) ? finishOrder : [...finishOrder, color];
       setFinishOrder(newFinishOrder);
 
       if (reallyAllFinished) {
-        // This color has finished all tokens — check if game is over
-        const activePlayers = COLORS.filter(
-          (c) => !newFinishOrder.includes(c) && c !== color
-        );
         const updatedOrder = [...finishOrder, color];
         if (updatedOrder.length >= 3) {
-          // 3 players finished → last one auto-loses, game over
           setTimeout(() => setScreen("over"), 800);
           setFinishOrder(updatedOrder);
-          return;
+          gameOver = true;
+        } else {
+          setFinishOrder(updatedOrder);
         }
-        setFinishOrder(updatedOrder);
       }
     }
 
-    // Extra roll on 6 or capture
-    const getsExtra = dice === 6 || (captured !== null && rollCount < 2);
-    advanceTurn(getsExtra, true);
+    if (gameOver) return;
+
+    // Mark die as used
+    const newUsedDice = [...currentUsed];
+    newUsedDice[activeIdx] = true;
+    setUsedDice(newUsedDice);
+
+    // Check if there are unused dice left
+    const nextUnusedIdx = newUsedDice.findIndex(u => !u);
+    
+    if (nextUnusedIdx !== -1) {
+      // More dice to use
+      setActiveDieIndex(nextUnusedIdx);
+      
+      // Auto-check if next die has valid moves
+      const nextVal = currentVals[nextUnusedIdx];
+      const movable = newTokens[color].filter(t => isValidMove(t, nextVal));
+      if (movable.length === 0) {
+        // Next die is unplayable
+        newUsedDice[nextUnusedIdx] = true;
+        setUsedDice(newUsedDice);
+        // Wait! What if there are 3 dice? We only support up to 2.
+        const getsExtra = currentVals.includes(6) || (captured !== null && rollCount < 2);
+        advanceTurn(getsExtra, true);
+      } else {
+        setSelectableTokens(movable.map(t => t.id));
+      }
+    } else {
+      // All dice used
+      const getsExtra = currentVals.includes(6) || (captured !== null && rollCount < 2);
+      advanceTurn(getsExtra, true);
+    }
   };
 
   // ─── Advance turn ────────────────────────────────────────────────────────────
@@ -296,7 +359,7 @@ export function useLudoState() {
   const handleTokenClick = (tokenId) => {
     if (!hasRolled || selectableTokens.length === 0) return;
     if (!selectableTokens.includes(tokenId)) return;
-    moveToken(tokenId, diceValue, tokens);
+    moveToken(tokenId, diceValues[activeDieIndex], tokens, activeDieIndex, usedDice, diceValues);
   };
 
   return {
@@ -304,7 +367,10 @@ export function useLudoState() {
     playerNames, setPlayerNames,
     tokens,
     currentPlayer,
-    diceValue,
+    diceValues,
+    usedDice,
+    activeDieIndex,
+    setActiveDie,
     rolling,
     hasRolled,
     extraRoll,
@@ -316,5 +382,7 @@ export function useLudoState() {
     rollDice,
     handleTokenClick,
     color,
+    pawnsCount, setPawnsCount,
+    diceCount, setDiceCount,
   };
 }

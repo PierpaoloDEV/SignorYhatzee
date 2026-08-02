@@ -176,7 +176,16 @@
   align-items: center;
   justify-content: center;
   font-size: 2.2rem;
-  transition: transform 0.15s;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.ludo-dice-active {
+  box-shadow: 0 0 12px currentColor;
+  transform: scale(1.1);
+}
+
+.ludo-dice-used {
+  filter: grayscale(100%);
 }
 
 .ludo-dice-rolling {
