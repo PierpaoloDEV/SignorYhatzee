@@ -3,8 +3,9 @@ import "./HomeCarousel.css";
 
 const GAMES = [
   { id: "yahtzee", emoji: "🎲", name: "Signor Yahtzee", tagline: "Il classico gioco dei dadi (ma con l'alcol)" },
-  { id: "ludo", emoji: "🎯", name: "Signor Ludo", tagline: "Il gioco da tavolo per 4 giocatori (ma con l'alcol)" },
   { id: "drago", emoji: "🐉", name: "Signor Drago", tagline: "Il gioco dell'oca (ma con l'alcol)" },
+  { id: "ludo", emoji: "♟️", name: "Signor Ludo", tagline: "Il gioco da tavolo per 4 giocatori (ma con l'alcol)" },
+  { id: "wheel", emoji: "🎡", name: "Signor Wheel", tagline: "La ruota della fortuna (ma con l'alcol)" },
 ];
 
 export default function HomeCarousel({ onSelectGame }) {
@@ -55,18 +56,28 @@ export default function HomeCarousel({ onSelectGame }) {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {GAMES.map((game) => (
-            <div className="carousel-slide" key={game.id}>
-              <div className="glass-panel game-card">
-                <div className="game-card-emoji">{game.emoji}</div>
-                <h2 className="game-card-name">{game.name}</h2>
-                <p className="subtitle">{game.tagline}</p>
-                <button className="btn btn-primary" style={{ width: "100%" }} onClick={() => onSelectGame(game.id)}>
-                  Gioca
-                </button>
+          {GAMES.map((game) => {
+            const [mainText, subText] = game.tagline.split(' (');
+            return (
+              <div className="carousel-slide" key={game.id}>
+                <div className="glass-panel game-card">
+                  <div className="game-card-emoji">{game.emoji}</div>
+                  <h2 className="game-card-name">{game.name}</h2>
+                  <p className="subtitle" style={{ margin: 0 }}>
+                    {mainText}
+                    {subText && (
+                      <span style={{ display: 'block', fontSize: '0.85em', opacity: 0.8, marginTop: '4px' }}>
+                        ({subText}
+                      </span>
+                    )}
+                  </p>
+                  <button className="btn btn-primary" style={{ width: "100%", marginTop: 'auto' }} onClick={() => onSelectGame(game.id)}>
+                    Gioca
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <button className="carousel-arrow right" onClick={next} aria-label="Gioco successivo">›</button>

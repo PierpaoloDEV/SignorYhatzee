@@ -20,6 +20,8 @@
   width: 100%;
   min-width: 0;
   display: flex;
+  padding: 0 24px;
+  box-sizing: border-box;
 }
 
 .game-card {
@@ -29,6 +31,7 @@
   align-items: center;
   gap: 12px;
   text-align: center;
+  flex: 1;
 }
 
 .game-card-emoji {

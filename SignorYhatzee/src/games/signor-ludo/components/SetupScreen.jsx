@@ -34,7 +34,7 @@ export default function SetupScreen({ playerNames, setPlayerNames, pawnsCount, s
   return (
     <div className="app setup-screen">
       <button className="back-btn" onClick={onExit}>← Altri giochi</button>
-      <h1 className="title">🎯 Signor Ludo</h1>
+      <h1 className="title">♟️ Signor Ludo</h1>
       
       <div className="glass-panel" style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
         <p className="subtitle" style={{ margin: 0 }}>Inserisci i giocatori (min 2)</p>
