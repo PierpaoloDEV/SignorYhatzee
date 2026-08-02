@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 export default function GameOverScreen({ state }) {
-  const { isGameOver, getWinner, players, totalScore, resetGame } = state;
+  const { isGameOver, getWinner, players, totalScore, resetGame, drinkStats } = state;
   const [confetti, setConfetti] = useState([]);
   const gameOver = isGameOver();
 
@@ -81,18 +81,33 @@ export default function GameOverScreen({ state }) {
                 <span className="score-name" style={{ fontWeight: position === 0 ? '900' : 'normal' }}>{p.name}</span>
               </div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                 <span className="score-pts" style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{p.score} pt</span>
+                
+                {/* Visualizzazione bevute durante la partita */}
+                <span style={{
+                  fontSize: '0.8rem',
+                  color: 'var(--accent)',
+                  fontWeight: 'bold',
+                  background: 'rgba(245, 158, 11, 0.15)',
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  whiteSpace: 'nowrap'
+                }}>
+                  🍻 Bevuti: {drinkStats?.[p.name] || 0} sorsi
+                </span>
+
+                {/* Penalità di fine partita */}
                 <span style={{ 
                   fontSize: '0.8rem', 
                   color: 'var(--red)', 
                   fontWeight: 'bold',
-                  marginTop: '4px',
                   background: 'rgba(239, 68, 68, 0.1)',
                   padding: '2px 8px',
-                  borderRadius: '10px'
+                  borderRadius: '10px',
+                  whiteSpace: 'nowrap'
                 }}>
-                  🍺 BEVI {position + 1} sorsi
+                  🔴 PENALITÀ: bevi {position + 1} sorsi
                 </span>
               </div>
             </div>

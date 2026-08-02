@@ -49,6 +49,7 @@ export default function YahtzeeGame({ onExit }) {
         case 'SELECT_TRAP':     gameStateRef.current.selectTrap(payload?.trapKey, true); break;
         case 'PLACE_BET':       gameStateRef.current.placeBet(payload?.betKey, true); break;
         case 'APPLY_RULE':      gameStateRef.current.applyRule(payload?.rule, true); break;
+        case 'PICKER_DONE':     gameStateRef.current.handlePickerDone(payload?.picksLog, true); break;
         default: break;
       }
     } catch (e) {

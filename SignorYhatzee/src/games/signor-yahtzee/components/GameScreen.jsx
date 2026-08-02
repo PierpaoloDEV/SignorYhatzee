@@ -7,10 +7,24 @@ import YahtzeeRuleModal from "./modals/YahtzeeRuleModal";
 import DrinkPopup from "./modals/DrinkPopup";
 import RulesInfoModal from "./modals/RulesInfoModal";
 import GameManagementModal from "./modals/GameManagementModal";
+import PlayerPickerModal from "./modals/PlayerPickerModal";
 import { CATEGORIES } from "../constants";
 
+const tn = (name, max = 12) => name?.length > max ? name.slice(0, max) + '…' : (name || '');
+
 export default function GameScreen({ state, onBack }) {
-  const { players, player, rollsLeft, bet, betMode, betWithTrap, traps, trapMode, showYahtzeeAnim, setShowManagementModal, isHost, resetGame } = state;
+  const { players, player, rollsLeft, bet, betMode, betWithTrap, traps, trapMode, showYahtzeeAnim, setShowManagementModal, isHost, resetGame, roundCount, rulesMode } = state;
+
+  // Calcola il round counter e il countdown del CAOS
+  const roundDisplay = `Giro ${roundCount + 1}`;
+  let chaosDisplay = null;
+  if (rulesMode?.startsWith('CAOS')) {
+    const interval = parseInt(rulesMode.split('_')[1]) || 4;
+    const remaining = interval - (roundCount % interval);
+    chaosDisplay = remaining === 1
+      ? '🔥 Caos al prossimo giro!'
+      : `🔥 Caos tra ${remaining} giri`;
+  }
 
   return (
     <div className="app game-screen">
@@ -47,8 +61,11 @@ export default function GameScreen({ state, onBack }) {
               )}
             </div>
             <div className="turn-info">
-              <span className="turn-player">{players[player]} {state.isMyTurn ? '(Tu)' : ''}</span>
+              <span className="turn-player" title={players[player]}>{tn(players[player])} {state.isMyTurn ? '(Tu)' : ''}</span>
               <span className="turn-rolls">Lanci rimasti: {rollsLeft}</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--muted)', opacity: 0.85 }}>
+                {roundDisplay}{chaosDisplay ? ` · ${chaosDisplay}` : ''}
+              </span>
             </div>
             {!state.isMyTurn && (
               <div className="waiting-indicator" style={{ 
@@ -61,7 +78,7 @@ export default function GameScreen({ state, onBack }) {
                 color: 'var(--muted)',
                 border: '1px solid rgba(255,255,255,0.1)'
               }}>
-                ⏳ In attesa del turno di <b>{players[player]}</b>...
+                ⏳ In attesa del turno di <b title={players[player]}>{tn(players[player])}</b>...
               </div>
             )}
           </header>
@@ -95,6 +112,7 @@ export default function GameScreen({ state, onBack }) {
       <TrapModal state={state} />
       <YahtzeeRuleModal state={state} />
       <GameManagementModal state={state} />
+      <PlayerPickerModal state={state} />
 
       {showYahtzeeAnim && (
         <div className="yahtzee-animation">

@@ -1,0 +1,331 @@
+/* ── Signor Drago — tema fuoco/drago ─────────────────────────── */
+
+.drago-title {
+  font-size: 2rem;
+  font-weight: 900;
+  text-align: center;
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.drago-subtitle {
+  color: var(--muted);
+  text-align: center;
+  font-size: .95rem;
+}
+
+.drago-rule-note {
+  color: var(--muted);
+  text-align: center;
+  font-size: .85rem;
+  max-width: 480px;
+  line-height: 1.4;
+}
+
+/* ── Setup ────────────────────────────────────────────────── */
+.drago-setup-panel {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.drago-input-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.drago-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.drago-input {
+  flex: 1;
+  background: rgba(0, 0, 0, .3);
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 1rem;
+}
+.drago-input:focus {
+  outline: none;
+  border-color: #f97316;
+}
+
+.drago-input-remove {
+  background: rgba(239, 68, 68, .15);
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.drago-start-btn {
+  width: 100%;
+  padding: 16px;
+}
+.drago-start-btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* ── Schermata tabellone: usa tutta la larghezza disponibile ─── */
+.drago-board-shell {
+  min-height: 100vh;
+  padding: 20px 12px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ── Turno ────────────────────────────────────────────────── */
+.drago-turn-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border: 2px solid transparent;
+  font-size: 1rem;
+}
+
+.drago-turn-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Tabellone a spirale rettangolare ─────────────────────── */
+.drago-grid-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.drago-grid {
+  display: grid;
+  gap: 0;
+  width: min(96vw, 131vh, 1040px);
+  aspect-ratio: 10 / 7;
+  background: rgba(0, 0, 0, .25);
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.drago-grid-cell {
+  position: relative;
+  background: rgba(15, 23, 42, .92);
+  border-style: solid;
+  border-color: var(--red);
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 1px 2px;
+  line-height: 1.05;
+  color: var(--text);
+}
+
+.drago-grid-icon {
+  font-size: clamp(.7rem, 2.1vw, 1.15rem);
+}
+
+.drago-grid-number {
+  font-size: clamp(.4rem, .95vw, .55rem);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.drago-grid-name {
+  font-size: clamp(.3rem, .8vw, .46rem);
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.drago-grid-cell-center {
+  background: radial-gradient(circle, #7f1d1d, #1a0303);
+  border: 2px solid #ef4444;
+  box-shadow: 0 0 20px #ef4444;
+  z-index: 2;
+}
+.drago-grid-cell-center .drago-grid-icon {
+  font-size: clamp(1.1rem, 2.8vw, 1.8rem);
+}
+.drago-grid-cell-center .drago-grid-name {
+  font-weight: 800;
+  color: #fecaca;
+}
+
+.drago-grid-pawns {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 1px;
+  max-width: 60%;
+}
+
+.drago-pawn {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, .85);
+  box-shadow: 0 0 3px rgba(0, 0, 0, .6);
+}
+
+/* ── Controlli ────────────────────────────────────────────── */
+.drago-controls {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  flex-wrap: wrap;
+}
+
+/* Dado: stesso stile/animazione del dado di Signor Yahtzee (.die/.rolling). */
+.drago-die {
+  width: 72px;
+  height: 72px;
+  font-size: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 2px solid var(--surface2);
+  border-radius: var(--radius);
+  color: var(--text);
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.drago-die.rolling {
+  animation: drago-dice-roll .4s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  border-color: #f97316;
+  box-shadow: 0 0 15px rgba(249, 115, 22, .4);
+}
+
+@keyframes drago-dice-roll {
+  0% { transform: scale(1) rotate(0deg); filter: blur(0px); }
+  25% { transform: scale(1.1) rotate(90deg); filter: blur(2px); }
+  50% { transform: scale(0.9) rotate(180deg); filter: blur(3px); }
+  75% { transform: scale(1.1) rotate(270deg); filter: blur(2px); }
+  100% { transform: scale(1) rotate(360deg); filter: blur(0px); }
+}
+
+@media (max-width: 400px) {
+  .drago-die { width: 52px; height: 52px; font-size: 2rem; }
+}
+
+/* ── Modale evento casella ────────────────────────────────── */
+.drago-event-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  cursor: pointer;
+  background: rgba(5, 5, 10, .88);
+  animation: drago-fade-in .3s ease-out;
+}
+
+.drago-event-content {
+  text-align: center;
+  max-width: 420px;
+  background: rgba(255, 255, 255, .03);
+  border: 2px solid var(--event-color, #f97316);
+  box-shadow: 0 0 40px var(--event-color, #f97316);
+  border-radius: 20px;
+  padding: 32px 24px;
+}
+
+.drago-event-icon {
+  font-size: 3.5rem;
+}
+.drago-event-icon-shake {
+  animation: drago-shake .5s infinite;
+}
+
+.drago-event-label {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: .75rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--event-color);
+}
+
+.drago-event-title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #fff;
+  margin-top: 6px;
+  text-shadow: 0 0 16px var(--event-color);
+}
+
+.drago-event-text {
+  color: #f1f5f9;
+  font-size: 1.05rem;
+  margin-top: 14px;
+  line-height: 1.4;
+}
+
+.drago-event-hint {
+  color: rgba(255, 255, 255, .5);
+  font-size: .8rem;
+  margin-top: 22px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.drago-event-angry {
+  background: radial-gradient(circle at center, #7f1d1d 0%, #1a0303 80%);
+  animation: drago-flash .5s ease-out;
+}
+.drago-event-angry .drago-event-content {
+  border-color: #ef4444;
+  box-shadow: 0 0 60px #ef4444;
+}
+
+@keyframes drago-shake {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+
+@keyframes drago-flash {
+  0% { background-color: #ef4444; }
+  100% { background-color: transparent; }
+}
+
+@keyframes drago-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

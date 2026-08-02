@@ -9,6 +9,7 @@ export default function GameManagementModal({ state }) {
     restartGame, 
     resetGame,
     socketId,
+    playerIds,
     multiplayerPlayers
   } = state;
 
@@ -31,8 +32,8 @@ export default function GameManagementModal({ state }) {
                 background: 'rgba(255,255,255,0.05)',
                 borderRadius: '8px'
               }}>
-                <span style={{ fontWeight: 'bold' }}>{name} {multiplayerPlayers[i]?.id === socketId ? '(Tu)' : ''}</span>
-                {multiplayerPlayers[i]?.id !== socketId && (
+                <span style={{ fontWeight: 'bold' }}>{name} {socketId && playerIds[i] === socketId ? '(Tu)' : ''}</span>
+                {socketId && playerIds[i] !== socketId && (
                   <button 
                     className="btn btn-outline" 
                     style={{ 

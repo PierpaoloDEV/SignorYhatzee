@@ -2,7 +2,7 @@ import { cycleOption } from "../utils/gameHelpers";
 import { BET_OPTS, TRAP_OPTS, RULES_MODE_OPTS } from "../constants";
 
 export default function SetupScreen({ state, onBack }) {
-  const { playerNames, setPlayerNames, startGame, betMode, setBetMode, trapMode, setTrapMode, rulesMode, setRulesMode } = state;
+  const { playerNames, setPlayerNames, startGame, betMode, setBetMode, trapMode, setTrapMode, rulesMode, setRulesMode, betWithTrap, setBetWithTrap } = state;
 
   return (
     <div className="app setup-screen">
@@ -47,9 +47,17 @@ export default function SetupScreen({ state, onBack }) {
           <div className="setting-card">
             <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--muted)', textTransform: 'uppercase' }}>💣 Trappola</label>
             <div className="custom-select-premium">
-              <button className="select-btn" type="button" onClick={() => setTrapMode(cycleOption(trapMode, TRAP_OPTS, -1))}>◀</button>
+              <button className="select-btn" type="button" onClick={() => {
+                const next = cycleOption(trapMode, TRAP_OPTS, -1);
+                setTrapMode(next);
+                if (next === "NO") setBetWithTrap(false);
+              }}>◀</button>
               <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center', flex: 1 }}>{TRAP_OPTS.find(o => o.v === trapMode)?.l}</span>
-              <button className="select-btn" type="button" onClick={() => setTrapMode(cycleOption(trapMode, TRAP_OPTS, 1))}>▶</button>
+              <button className="select-btn" type="button" onClick={() => {
+                const next = cycleOption(trapMode, TRAP_OPTS, 1);
+                setTrapMode(next);
+                if (next === "NO") setBetWithTrap(false);
+              }}>▶</button>
             </div>
           </div>
 
@@ -62,18 +70,20 @@ export default function SetupScreen({ state, onBack }) {
             </div>
           </div>
 
+          {trapMode !== "NO" && (
           <div className="setting-card">
             <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--muted)', textTransform: 'uppercase' }}>💣 Scommessa con Trappola</label>
             <div 
               className="custom-select-premium" 
-              style={{ cursor: 'pointer', justifyContent: 'center', background: state.betWithTrap ? 'rgba(239,68,68,0.2)' : 'rgba(0,0,0,0.3)', borderColor: state.betWithTrap ? 'var(--red)' : 'rgba(255,255,255,0.1)' }} 
-              onClick={() => state.setBetWithTrap(!state.betWithTrap)}
+              style={{ cursor: 'pointer', justifyContent: 'center', background: betWithTrap ? 'rgba(239,68,68,0.2)' : 'rgba(0,0,0,0.3)', borderColor: betWithTrap ? 'var(--red)' : 'rgba(255,255,255,0.1)' }} 
+              onClick={() => setBetWithTrap(!betWithTrap)}
             >
-              <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center', color: state.betWithTrap ? 'var(--red)' : 'inherit' }}>
-                {state.betWithTrap ? "ATTIVA (ON)" : "DISATTIVA (OFF)"}
+              <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center', color: betWithTrap ? 'var(--red)' : 'inherit' }}>
+                {betWithTrap ? "ATTIVA (ON)" : "DISATTIVA (OFF)"}
               </span>
             </div>
           </div>
+          )}
         </div>
 
         <button className="btn btn-primary" style={{ width: '100%', padding: '16px' }} onClick={() => startGame()}>
