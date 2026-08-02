@@ -15,15 +15,15 @@ export default function SetupScreen({ playerNames, setPlayerNames, onStart, onEx
   };
 
   const colorStyles = {
-    red:    { border: "2px solid #ef4444", color: "#ef4444" },
-    blue:   { border: "2px solid #3b82f6", color: "#3b82f6" },
+    red: { border: "2px solid #ef4444", color: "#ef4444" },
+    blue: { border: "2px solid #3b82f6", color: "#3b82f6" },
     yellow: { border: "2px solid #f59e0b", color: "#f59e0b" },
-    green:  { border: "2px solid #22c55e", color: "#22c55e" },
+    green: { border: "2px solid #22c55e", color: "#22c55e" },
   };
 
   return (
     <div className="app ludo-setup">
-      <button className="back-btn" onClick={onExit}>← Giochi</button>
+      <button className="back-btn" onClick={onExit}>← Altri giochi</button>
       <h1 className="title ludo-title">🎯 Signor Ludo</h1>
       <p className="subtitle">Inserisci i nomi dei giocatori</p>
 

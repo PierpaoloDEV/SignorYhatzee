@@ -24,11 +24,10 @@ const TRACK_CELLS = [
 
 // Color for each track cell background (for the colored lanes near home stretch)
 function getCellColor(idx) {
-  // Each color has 5 approach cells
-  if (idx >= 1 && idx <= 5) return "red";     // Red approach
-  if (idx >= 14 && idx <= 18) return "blue";  // Blue approach
-  if (idx >= 27 && idx <= 31) return "yellow";// Yellow approach
-  if (idx >= 40 && idx <= 44) return "green"; // Green approach
+  if (idx === 0) return "red";
+  if (idx === 13) return "blue";
+  if (idx === 26) return "yellow";
+  if (idx === 39) return "green";
   return null;
 }
 
@@ -155,64 +154,21 @@ function buildTrack() {
 
 // ─── Clean implementation with correct 52-cell track ─────────────────────────
 
-const TRACK_52 = buildTrack52();
-
-function buildTrack52() {
-  return [
-    // Red entry = 0, going clockwise
-    // Left column: col 1, rows 6→1 (6 cells)
-    [6,1],[5,1],[4,1],[3,1],[2,1],[1,1],  // 0-5
-    // Top row going right: row 0, cols 1→6 (6 cells)
-    [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],  // 6-11
-    // Top center column going down: col 7, row 0 (1 cell — safe)
-    [0,7],                                // 12 — safe (top)
-    // Blue entry = 13
-    // Top right going right: row 0, cols 8→13 (6 cells)
-    [0,8],[0,9],[0,10],[0,11],[0,12],[0,13], // 13-18
-    // Right column top: col 13, rows 1→6 (6 cells)
-    [1,13],[2,13],[3,13],[4,13],[5,13],[6,13], // 19-24
-    // Right middle row going right: row 7, cols 14→9... wait
-    // Actually row 6 right: row 6, cols 13→8
-    [6,13],[6,12],[6,11],[6,10],[6,9],[6,8], // wrong — reuse [6,13]
-  ];
-}
-
-// ─── Definitive clean 52-cell track ──────────────────────────────────────────
-
-export const TRACK = (() => {
-  const t = [];
-  // Standard clockwise starting from Red (top-left side):
-  // Segment 1: Left outer column, going up: col 1, row 6→1
-  for (let r = 6; r >= 1; r--) t.push([r, 1]);         // 0-5 (Red entry=0)
-  // Segment 2: Top row going right: row 0, col 1→6
-  for (let c = 1; c <= 6; c++) t.push([0, c]);          // 6-11
-  // Segment 3: Top center (safe): row 0, col 7
-  t.push([0, 7]);                                         // 12
-  // Segment 4: Top row going right: row 0, col 8→13
-  for (let c = 8; c <= 13; c++) t.push([0, c]);         // 13-18 (Blue entry=13)
-  // Segment 5: Right outer column going down: col 13, row 1→6
-  for (let r = 1; r <= 6; r++) t.push([r, 13]);         // 19-24
-  // Segment 6: Middle row going right: row 6, col 13→8 — NO. Row 7 right of home
-  // Actually: right middle going down from row 6 col 13:
-  // Row 6 going right from col 13→14 already done; next is row 7 col 14 going down...
-  // Let me use the absolute standard layout:
-  // After right column we go: row 7 going right col 14→9 (right-center row)
-  for (let c = 13; c >= 8; c--) t.push([6, c]);        // 25-30 (row 6 going left)
-  // Right center safe: row 7, col 13
-  t.push([7, 13]);                                        // 31 — safe
-  // Yellow approach: row 7, col 14→9 going left... hmm
-  // Bottom-right going down: col 13, row 8→13
-  for (let r = 8; r <= 13; r++) t.push([r, 13]);        // 32-37 (Yellow entry=26... offset issue)
-  // Bottom row going left: row 14, col 13→8
-  for (let c = 13; c >= 8; c--) t.push([14, c]);        // 38-43
-  // Bottom center (safe): row 14, col 7
-  t.push([14, 7]);                                        // 44
-  // Bottom row going left: row 14, col 6→1
-  for (let c = 6; c >= 1; c--) t.push([14, c]);         // 45-50 (Green entry=39)
-  // Left outer column going up: col 1, row 13→8
-  for (let r = 13; r >= 8; r--) t.push([r, 1]);         // 51 (only 1 left)
-  return t;                                               // total: 52 cells
-})();
+export const TRACK = [
+  [6,1],[6,2],[6,3],[6,4],[6,5],
+  [5,6],[4,6],[3,6],[2,6],[1,6],[0,6],
+  [0,7],
+  [0,8],[1,8],[2,8],[3,8],[4,8],[5,8],
+  [6,9],[6,10],[6,11],[6,12],[6,13],[6,14],
+  [7,14],
+  [8,14],[8,13],[8,12],[8,11],[8,10],[8,9],
+  [9,8],[10,8],[11,8],[12,8],[13,8],[14,8],
+  [14,7],
+  [14,6],[13,6],[12,6],[11,6],[10,6],[9,6],
+  [8,5],[8,4],[8,3],[8,2],[8,1],[8,0],
+  [7,0],
+  [6,0]
+];
 
 // ─── Simple board renderer component ─────────────────────────────────────────
 
@@ -233,10 +189,10 @@ const BASE_POSITIONS = {
 
 const HOME_STRETCH_POSITIONS = {
   // 5 cells in home stretch (homeIdx 0→4, closest to entry first)
-  red:    [[5,7],[4,7],[3,7],[2,7],[1,7]],
-  blue:   [[7,9],[7,10],[7,11],[7,12],[7,13]], // flipped: 0 = closest entry
-  yellow: [[9,7],[10,7],[11,7],[12,7],[13,7]],
-  green:  [[7,5],[7,4],[7,3],[7,2],[7,1]],
+  red:    [[7,1],[7,2],[7,3],[7,4],[7,5]],
+  blue:   [[1,7],[2,7],[3,7],[4,7],[5,7]],
+  yellow: [[7,13],[7,12],[7,11],[7,10],[7,9]],
+  green:  [[13,7],[12,7],[11,7],[10,7],[9,7]],
 };
 
 const CENTER_POSITION = [7, 7];
@@ -259,7 +215,7 @@ function getTokenCellCoords(token) {
 
 // ─── Main Board Component ─────────────────────────────────────────────────────
 
-export default function BoardScreen({ state }) {
+export default function BoardScreen({ state, onExit }) {
   const {
     tokens,
     currentPlayer,
@@ -309,10 +265,10 @@ export default function BoardScreen({ state }) {
   };
 
   function getCellColorForTrack(idx) {
-    if (idx >= 1 && idx <= 5) return "red";
-    if (idx >= 14 && idx <= 18) return "blue";
-    if (idx >= 32 && idx <= 36) return "yellow";
-    if (idx >= 45 && idx <= 49) return "green";
+    if (idx === 0) return "red";
+    if (idx === 13) return "blue";
+    if (idx === 26) return "yellow";
+    if (idx === 39) return "green";
     return null;
   }
 
@@ -426,7 +382,8 @@ export default function BoardScreen({ state }) {
   return (
     <div className="ludo-game-screen">
       {/* Header */}
-      <div className="ludo-header">
+      <div style={{ width: "100%", maxWidth: BOARD_SIZE, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8, position: "relative" }}>
+        <button className="back-btn" onClick={onExit} style={{ position: "absolute", left: 0, margin: 0, padding: "8px 12px", zIndex: 10 }}>← Esci</button>
         <div className="ludo-turn-indicator" style={{ borderColor: TOKEN_COLORS[currentColor] }}>
           <span style={{ color: TOKEN_COLORS[currentColor], fontWeight: 700, fontSize: "1rem" }}>
             {COLOR_EMOJIS[currentColor]} {currentName}
@@ -527,18 +484,18 @@ function getBaseColor(r, c) {
 }
 
 function isHomeStretchCell(r, c) {
-  if (c === 7 && r >= 1 && r <= 5) return true;   // Red
-  if (r === 7 && c >= 9 && c <= 13) return true;  // Blue
-  if (c === 7 && r >= 9 && r <= 13) return true;  // Yellow
-  if (r === 7 && c >= 1 && c <= 5) return true;   // Green
+  if (r === 7 && c >= 1 && c <= 5) return true;   // Red
+  if (c === 7 && r >= 1 && r <= 5) return true;   // Blue
+  if (r === 7 && c >= 9 && c <= 13) return true;  // Yellow
+  if (c === 7 && r >= 9 && r <= 13) return true;  // Green
   return false;
 }
 
 function getHomeStretchColor(r, c) {
-  if (c === 7 && r >= 1 && r <= 5) return "red";
-  if (r === 7 && c >= 9 && c <= 13) return "blue";
-  if (c === 7 && r >= 9 && r <= 13) return "yellow";
-  if (r === 7 && c >= 1 && c <= 5) return "green";
+  if (r === 7 && c >= 1 && c <= 5) return "red";
+  if (c === 7 && r >= 1 && r <= 5) return "blue";
+  if (r === 7 && c >= 9 && c <= 13) return "yellow";
+  if (c === 7 && r >= 9 && r <= 13) return "green";
   return null;
 }
 

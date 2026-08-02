@@ -35,5 +35,5 @@ export default function LudoGame({ onExit }) {
     );
   }
 
-  return <BoardScreen state={state} />;
+  return <BoardScreen state={state} onExit={onExit} />;
 }

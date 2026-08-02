@@ -3,8 +3,8 @@ import "./HomeCarousel.css";
 
 const GAMES = [
   { id: "yahtzee", emoji: "🎲", name: "Signor Yahtzee", tagline: "Il classico gioco dei dadi (ma con l'alcol)" },
-  { id: "ludo", emoji: "🎯", name: "Signor Ludo", tagline: "Il gioco da tavolo per 4 giocatori" },
-  { id: "drago", emoji: "🐉", name: "Signor Drago", tagline: "Prossimamente" },
+  { id: "ludo", emoji: "🎯", name: "Signor Ludo", tagline: "Il gioco da tavolo per 4 giocatori (ma con l'alcol)" },
+  { id: "drago", emoji: "🐉", name: "Signor Drago", tagline: "Il gioco dell'oca (ma con l'alcol)" },
 ];
 
 export default function HomeCarousel({ onSelectGame }) {

@@ -100,7 +100,7 @@ function isValidMove(token, diceValue) {
   }
 
   // On track — check overshoot into home stretch
-  if (newRelative > 56) return false; // too far, overshoot
+  if (newRelative > 57) return false; // too far, overshoot
 
   return true;
 }
