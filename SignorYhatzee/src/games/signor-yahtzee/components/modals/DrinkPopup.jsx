@@ -19,10 +19,9 @@ export default function DrinkPopup({ state }) {
   return (
     <div
       className="popup-overlay"
-      onClick={isMyTurn ? handleClosePopup : undefined}
-      style={{ cursor: isMyTurn ? 'pointer' : 'default' }}
+      style={{ cursor: 'default' }}
     >
-      <div className="popup">
+      <div className="popup" onClick={(e) => e.stopPropagation()}>
         {drinkersHeader && (
           <div style={{
             background: 'rgba(251, 191, 36, 0.15)',
@@ -40,11 +39,33 @@ export default function DrinkPopup({ state }) {
           </div>
         )}
         <p className="popup-text" style={{ whiteSpace: 'pre-wrap' }}>🍻 {popup}</p>
-        <p style={{ marginTop: '20px', fontSize: '0.9rem', opacity: 0.8, textAlign: 'center' }}>
-          {isMyTurn
-            ? '(Tocca ovunque per continuare)'
-            : `⏳ In attesa di ${players?.[player] ?? '...'} per continuare...`}
-        </p>
+        {isMyTurn ? (
+          <button
+            onClick={handleClosePopup}
+            style={{
+              marginTop: '20px',
+              padding: '12px 32px',
+              fontSize: '1rem',
+              fontWeight: 700,
+              background: 'var(--gold)',
+              color: '#111',
+              border: 'none',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              display: 'block',
+              width: '100%',
+              transition: 'opacity 0.15s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            ✅ Continua
+          </button>
+        ) : (
+          <p style={{ marginTop: '20px', fontSize: '0.9rem', opacity: 0.8, textAlign: 'center' }}>
+            ⏳ In attesa di {players?.[player] ?? '...'} per continuare...
+          </p>
+        )}
       </div>
     </div>
   );

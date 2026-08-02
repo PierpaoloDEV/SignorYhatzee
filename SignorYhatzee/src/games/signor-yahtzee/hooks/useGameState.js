@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CATEGORIES, SPECIAL_RULES } from "../constants";
 import { calculateScore, rollRandom, getCounts, hasOfAKind } from "../utils/gameHelpers";
 import { triggerHaptic, triggerSuccess } from "../utils/haptics";
@@ -46,6 +46,16 @@ export function useGameState(multiplayer = null) {
   const [midTurnPopup, setMidTurnPopup] = useState(false);
   const [triggeredRulesThisTurn, setTriggeredRulesThisTurn] = useState([]);
   const [lastPlayedCategory, setLastPlayedCategory] = useState(null);
+  const [popupPickerEvents, setPopupPickerEvents] = useState([]);
+  const [showPlayerPicker, setShowPlayerPicker] = useState(false);
+  const [drinkStats, setDrinkStats] = useState({}); // { [playerName]: totalSips }
+
+  // Refs per evitare stale closure in handleClosePopup (critico per multiplayer)
+  const midTurnPopupRef = useRef(false);
+  const pendingTrapRef = useRef(false);
+  const pendingYahtzeeRef = useRef(false);
+  const popupPickerEventsRef = useRef([]);
+  const pendingAfterPickerRef = useRef({ trap: false, yahtzee: false });
 
   // --- MULTIPLAYER SYNC (GUEST): reagisce a lastReceivedState come dep React stabile ---
   useEffect(() => {
@@ -75,6 +85,9 @@ export function useGameState(multiplayer = null) {
       if (remoteState.rulesMode) setRulesMode(remoteState.rulesMode);
       if (remoteState.roundCount !== undefined) setRoundCount(remoteState.roundCount);
       if (remoteState.lastPlayedCategory !== undefined) setLastPlayedCategory(remoteState.lastPlayedCategory ?? null);
+      setPopupPickerEvents(remoteState.popupPickerEvents || []);
+      setShowPlayerPicker(remoteState.showPlayerPicker || false);
+      if (remoteState.drinkStats) setDrinkStats(remoteState.drinkStats);
     }
   }, [multiplayer?.lastReceivedState, isHost]);
 
@@ -83,10 +96,11 @@ export function useGameState(multiplayer = null) {
       syncState({
         setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds,
         popup, popupDrinkers, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal,
-        betMode, trapMode, rulesMode, roundCount, betWithTrap, lastPlayedCategory
+        betMode, trapMode, rulesMode, roundCount, betWithTrap, lastPlayedCategory,
+        popupPickerEvents, showPlayerPicker, drinkStats
       });
     }
-  }, [setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds, popup, popupDrinkers, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal, betMode, trapMode, rulesMode, roundCount, betWithTrap, lastPlayedCategory, isHost, syncState]);
+  }, [setup, players, dice, held, rollsLeft, player, scores, rolling, playerIds, popup, popupDrinkers, bet, traps, activeRules, showBetModal, showTrapModal, showRuleModal, betMode, trapMode, rulesMode, roundCount, betWithTrap, lastPlayedCategory, popupPickerEvents, showPlayerPicker, drinkStats, isHost, syncState]);
 
 
   // AUTO-REMOVE DISCONNECTED PLAYERS (Host only)
@@ -237,16 +251,22 @@ export function useGameState(multiplayer = null) {
     }
   };
 
+  // Wrapper che aggiorna sia lo stato che il ref corrispondente
+  const setMidTurnPopupSafe = (val) => { midTurnPopupRef.current = val; setMidTurnPopup(val); };
+  const setPendingTrapSafe = (val) => { pendingTrapRef.current = val; setPendingTrap(val); };
+  const setPendingYahtzeeSafe = (val) => { pendingYahtzeeRef.current = val; setPendingYahtzee(val); };
+  const setPopupPickerEventsSafe = (val) => { popupPickerEventsRef.current = val; setPopupPickerEvents(val); };
+
   const triggerChaosRule = (currentActiveRules = activeRules) => {
     const inactiveRules = SPECIAL_RULES.filter(sr => !currentActiveRules.some(ar => ar.key === sr.key));
     if (inactiveRules.length > 0) {
       const randomRule = inactiveRules[Math.floor(Math.random() * inactiveRules.length)];
       setActiveRules(prev => [...prev, { type: "special", ...randomRule }]);
       setPopup(`💥 MODALITÀ CAOS! 💥\n\nIl gioco ha attivato automaticamente una regola speciale:\n\n✨ ${randomRule.title} ✨\n${randomRule.desc}`);
-      setMidTurnPopup(true);
+      setMidTurnPopupSafe(true);
     } else {
       setPopup("💥 MODALITÀ CAOS! 💥\n\nIl caos ha raggiunto il suo apice! Tutte le regole speciali sono già attive! 🍻");
-      setMidTurnPopup(true);
+      setMidTurnPopupSafe(true);
     }
   };
 
@@ -275,6 +295,7 @@ export function useGameState(multiplayer = null) {
     setScores(shuffledNames.map(() => ({})));
     setPlayerIds(shuffledIds);
     setRoundCount(0);
+    setDrinkStats({});
     setSetup(false);
 
     if (rulesMode.startsWith("CAOS")) {
@@ -392,7 +413,7 @@ export function useGameState(multiplayer = null) {
       if (extraPopup) {
         setPopup(extraPopup);
         setPopupDrinkers(Object.keys(midTurnDrinkers).length > 0 ? midTurnDrinkers : null);
-        setMidTurnPopup(true);
+        setMidTurnPopupSafe(true);
         if (newlyTriggered.length > 0) {
           setTriggeredRulesThisTurn(prev => [...prev, ...newlyTriggered]);
         }
@@ -478,9 +499,13 @@ export function useGameState(multiplayer = null) {
 
     // Build drinkers map for popup header
     const drinkers = {};
-    const addDrinkerToMap = (name, count = 1) => { drinkers[name] = (drinkers[name] || 0) + count; };
+    const addDrinkerToMap = (name, count = 1) => { 
+      drinkers[name] = (drinkers[name] || 0) + count; 
+      setDrinkStats(prev => ({ ...prev, [name]: (prev[name] || 0) + count }));
+    };
 
     let popupParts = [];
+    const pickerEvents = []; // eventi "scegli chi beve" → apriranno il PlayerPickerModal
 
     // Regola Copycat: stessa categoria dell'ultimo giocatore
     if (activeRules.some(r => r.key === "copycat") && lastPlayedCategory && cat === lastPlayedCategory) {
@@ -495,6 +520,7 @@ export function useGameState(multiplayer = null) {
 
     if (bonusAchieved) {
       popupParts.push("🎉 BONUS SBLOCCATO! (+35 pt)\nScegli 3 persone (o la stessa 3 volte) da far bere! 🍻");
+      pickerEvents.push({ sips: 3, label: '🎉 Bonus – Distribuisci 3 sorsi (puoi ripetere lo stesso giocatore)' });
     }
 
       // Gestione scommessa con possibile regola Inversione
@@ -508,16 +534,18 @@ export function useGameState(multiplayer = null) {
             addDrinkerToMap(players[player]);
           } else {
             popupParts.push("🎯 SCOMMESSA VINTA!\nScegli chi beve un sorso extra!");
+            pickerEvents.push({ sips: 1, label: '🎯 Scommessa vinta – Scegli chi beve un sorso extra' });
           }
           
-          // Scommessa con Trappola: si attiva solo se la scommessa è vinta
-          if (betWithTrap) {
+          // Scommessa con Trappola: si attiva solo se la scommessa è vinta E le trappole sono abilitate
+          if (betWithTrap && trapMode !== "NO") {
             popupParts.push(`🚨 Scommessa con Trappola:\nÈ stata piazzata una trappola automatica su ${CATEGORIES.find(c => c.key === bet)?.label || bet}!`);
             setTraps(prev => [...prev, bet]);
           }
         } else {
           if (inverted) {
             popupParts.push("❌ SCOMMESSA PERSA! (Inversione) – Scegli chi beve un sorso extra!");
+            pickerEvents.push({ sips: 1, label: '❌ Scommessa persa (Inversione) – Scegli chi beve un sorso extra' });
           } else {
             popupParts.push("❌ SCOMMESSA PERSA!\nBevi tu un sorso extra!");
             addDrinkerToMap(players[player]);
@@ -534,6 +562,7 @@ export function useGameState(multiplayer = null) {
         } else {
           popupParts.push(`🚨 ${matchingTrapsCount} TRAPPOLE! (Controtrappola) 🚨\nScegli TU chi beve ${matchingTrapsCount} sorsi!`);
         }
+        pickerEvents.push({ sips: matchingTrapsCount, label: `🚨 Controtrappola – Scegli TU chi beve (${matchingTrapsCount} sorso/i)` });
         // Con controtrappola non aggiungiamo il current player ai drinkers
       } else {
         if (matchingTrapsCount === 1) {
@@ -546,8 +575,8 @@ export function useGameState(multiplayer = null) {
       setTraps(prev => prev.filter(t => t !== cat));
     }
 
-    // Regola Trappola Automatica: piazza una trappola sulla categoria appena segnata (se punti > 0)
-    if (activeRules.some(r => r.key === "auto_trap") && value > 0) {
+    // Regola Trappola Automatica: piazza una trappola sulla categoria appena segnata (se punti > 0 E trappole abilitate)
+    if (activeRules.some(r => r.key === "auto_trap") && value > 0 && trapMode !== "NO") {
       const catLabel = CATEGORIES.find(c => c.key === cat)?.label || cat;
       popupParts.push(`🔫 Trappola Automatica: hai segnato su ${catLabel}! Una trappola è stata piazzata per gli altri!`);
       setTraps(prev => [...prev, cat]);
@@ -590,7 +619,10 @@ export function useGameState(multiplayer = null) {
             const min = Math.min(...players.map((_, i) => totalScore(i, newScores)));
             players.filter((_, i) => totalScore(i, newScores) === min).forEach(name => addDrinkerToMap(name));
           }
-          // "Scegli chi beve" is not determinable, skip
+          // Se la regola custom dice "scegli chi beve", apriamo il picker
+          if (p1Lower.includes('scegli chi beve')) {
+            pickerEvents.push({ sips: 1, label: `📜 Regola Custom – Scegli chi beve` });
+          }
         }
       }
     });
@@ -606,6 +638,12 @@ export function useGameState(multiplayer = null) {
       if (ruleDrinkers) {
         Object.entries(ruleDrinkers).forEach(([name, count]) => addDrinkerToMap(name, count));
       }
+      // Picker per le categorie che richiedono "scegli chi beve"
+      if (ruleKey === 'threeKind' && value > 0) {
+        pickerEvents.push({ sips: 1, label: '🥂 Tris – Scegli chi beve' });
+      } else if (ruleKey === 'fourKind' && value > 0) {
+        pickerEvents.push({ sips: 2, label: '🥂 Poker – Scegli 2 che bevono' });
+      }
     }
     if (rule) popupParts.push("Regola Turno:\n" + rule);
 
@@ -616,8 +654,9 @@ export function useGameState(multiplayer = null) {
     if (popupParts.length > 0) {
       setPopup(popupParts.join("\n\n"));
       setPopupDrinkers(Object.keys(drinkers).length > 0 ? drinkers : null);
-      setPendingTrap(triggeredTrapSet);
-      setPendingYahtzee(isYahtzeeTriggered);
+      setPendingTrapSafe(triggeredTrapSet);
+      setPendingYahtzeeSafe(isYahtzeeTriggered);
+      setPopupPickerEventsSafe(pickerEvents);
     } else {
       setBet(null);
       if (triggeredTrapSet) {
@@ -638,23 +677,64 @@ export function useGameState(multiplayer = null) {
     setPopup(null);
     setPopupDrinkers(null);
 
-    // NOTA: setBet(null) viene spostato DOPO il controllo midTurnPopup
-    // per non azzerare la scommessa quando scatta una regola speciale mid-turn
+    // Usiamo i ref per leggere sempre lo stato ATTUALE (evita stale closure in multiplayer)
+    // Critico: quando l'host processa CLOSE_POPUP di un guest via gameStateRef,
+    // le variabili di stato chiuse nel closure potrebbero essere stale.
+    const isMidTurn = midTurnPopupRef.current;
+    const hasPendingTrap = pendingTrapRef.current;
+    const hasPendingYahtzee = pendingYahtzeeRef.current;
 
-    if (midTurnPopup) {
-      setMidTurnPopup(false);
+    const hasPickerEvents = popupPickerEventsRef.current.length > 0;
+
+    if (isMidTurn) {
+      setMidTurnPopupSafe(false);
       return;
     }
 
-    // Fine turno effettivo: ora azzeriamo la scommessa
+    // Fine turno effettivo: azzeriamo la scommessa
     setBet(null);
 
-    if (pendingTrap) {
+    if (hasPickerEvents) {
+      // Memorizza il pending state e mostra il picker prima di avanzare il turno
+      pendingAfterPickerRef.current = { trap: hasPendingTrap, yahtzee: hasPendingYahtzee };
+      setPendingTrapSafe(false);
+      setPendingYahtzeeSafe(false);
+      setShowPlayerPicker(true);
+    } else if (hasPendingTrap) {
       setShowTrapModal(true);
-      setPendingTrap(false);
-    } else if (pendingYahtzee) {
+      setPendingTrapSafe(false);
+    } else if (hasPendingYahtzee) {
       setShowRuleModal(true);
-      setPendingYahtzee(false);
+      setPendingYahtzeeSafe(false);
+    } else {
+      nextTurn();
+    }
+  };
+
+  const handlePickerDone = (picksLog = [], bypass = false) => {
+    if (!bypass && multiplayer && !isHost) {
+      sendAction('PICKER_DONE', { picksLog });
+      return;
+    }
+    
+    if (picksLog && picksLog.length > 0) {
+      setDrinkStats(prev => {
+        const next = { ...prev };
+        picksLog.forEach(name => {
+          next[name] = (next[name] || 0) + 1;
+        });
+        return next;
+      });
+    }
+
+    setShowPlayerPicker(false);
+    setPopupPickerEventsSafe([]);
+    const { trap, yahtzee } = pendingAfterPickerRef.current;
+    pendingAfterPickerRef.current = { trap: false, yahtzee: false };
+    if (trap) {
+      setShowTrapModal(true);
+    } else if (yahtzee) {
+      setShowRuleModal(true);
     } else {
       nextTurn();
     }
@@ -672,6 +752,14 @@ export function useGameState(multiplayer = null) {
     setRollsLeft(3);
     setNicoPenaltyApplied(false);
     setTriggeredRulesThisTurn([]);
+    // Assicura che i modal non rimangano aperti tra un turno e l'altro
+    // (showBetModal aperto causa il blocco silenzioso di selectCategory)
+    setShowBetModal(false);
+    setShowTrapModal(false);
+    setShowRuleModal(false);
+    setShowPlayerPicker(false);
+    setPopupPickerEventsSafe([]);
+    pendingAfterPickerRef.current = { trap: false, yahtzee: false };
 
     // Caos: attiva una regola casuale in base all'intervallo scelto
     if (completedRound && rulesMode.startsWith("CAOS")) {
@@ -814,7 +902,8 @@ export function useGameState(multiplayer = null) {
     setup, playerNames, setPlayerNames, players, betMode, setBetMode, trapMode, setTrapMode, rulesMode, setRulesMode, betWithTrap, setBetWithTrap,
     dice, held, rollsLeft, player, scores, rolling, popup, popupDrinkers, bet, setBet, showBetModal, setShowBetModal,
     traps, setTraps, showTrapModal, setShowTrapModal, showYahtzeeAnim, activeRules, setActiveRules, showRuleModal, setShowRuleModal,
-    showManagementModal, setShowManagementModal, isHost, socketId,
+    showManagementModal, setShowManagementModal, isHost, socketId, playerIds, roundCount,
+    popupPickerEvents, showPlayerPicker, handlePickerDone, drinkStats,
     multiplayerPlayers: multiplayer?.players || [],
     isMultiplayer: !!multiplayer,
     isMyTurn: multiplayer

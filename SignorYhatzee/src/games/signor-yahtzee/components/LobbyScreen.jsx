@@ -15,7 +15,7 @@ export default function LobbyScreen({ multiplayer, onLocalPlay, onOnlinePlay, st
     leaveRoom 
   } = multiplayer;
   
-  const { betMode, setBetMode, trapMode, setTrapMode, rulesMode, setRulesMode } = state || {};
+  const { betMode, setBetMode, trapMode, setTrapMode, rulesMode, setRulesMode, betWithTrap, setBetWithTrap } = state || {};
 
   const [playerName, setPlayerName] = useState('');
   const [inputCode, setInputCode] = useState('');
@@ -127,9 +127,17 @@ export default function LobbyScreen({ multiplayer, onLocalPlay, onOnlinePlay, st
                 <div className="setting-card" style={{ flex: 1, minWidth: '140px' }}>
                   <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--muted)', textTransform: 'uppercase' }}>💣 Trappola</label>
                   <div className="custom-select-premium">
-                    {isHost && <button className="select-btn" type="button" onClick={() => setTrapMode(cycleOption(trapMode, TRAP_OPTS, -1))}>◀</button>}
+                    {isHost && <button className="select-btn" type="button" onClick={() => {
+                      const next = cycleOption(trapMode, TRAP_OPTS, -1);
+                      setTrapMode(next);
+                      if (next === "NO") setBetWithTrap(false);
+                    }}>◀</button>}
                     <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center', flex: 1 }}>{TRAP_OPTS.find(o => o.v === trapMode)?.l}</span>
-                    {isHost && <button className="select-btn" type="button" onClick={() => setTrapMode(cycleOption(trapMode, TRAP_OPTS, 1))}>▶</button>}
+                    {isHost && <button className="select-btn" type="button" onClick={() => {
+                      const next = cycleOption(trapMode, TRAP_OPTS, 1);
+                      setTrapMode(next);
+                      if (next === "NO") setBetWithTrap(false);
+                    }}>▶</button>}
                   </div>
                 </div>
 
@@ -142,18 +150,20 @@ export default function LobbyScreen({ multiplayer, onLocalPlay, onOnlinePlay, st
                   </div>
                 </div>
 
+                {trapMode !== "NO" && (
                 <div className="setting-card" style={{ flex: 1, minWidth: '140px' }}>
                   <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--muted)', textTransform: 'uppercase' }}>💣 Scomm. + Trappola</label>
                   <div 
                     className="custom-select-premium" 
-                    style={{ cursor: isHost ? 'pointer' : 'default', justifyContent: 'center', background: state.betWithTrap ? 'rgba(239,68,68,0.2)' : 'rgba(0,0,0,0.3)', borderColor: state.betWithTrap ? 'var(--red)' : 'rgba(255,255,255,0.1)' }} 
-                    onClick={() => isHost && state.setBetWithTrap(!state.betWithTrap)}
+                    style={{ cursor: isHost ? 'pointer' : 'default', justifyContent: 'center', background: betWithTrap ? 'rgba(239,68,68,0.2)' : 'rgba(0,0,0,0.3)', borderColor: betWithTrap ? 'var(--red)' : 'rgba(255,255,255,0.1)' }} 
+                    onClick={() => isHost && setBetWithTrap(!betWithTrap)}
                   >
-                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center', color: state.betWithTrap ? 'var(--red)' : 'inherit' }}>
-                      {state.betWithTrap ? "ATTIVA (ON)" : "DISATTIVA (OFF)"}
+                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center', color: betWithTrap ? 'var(--red)' : 'inherit' }}>
+                      {betWithTrap ? "ATTIVA (ON)" : "DISATTIVA (OFF)"}
                     </span>
                   </div>
                 </div>
+                )}
               </div>
 
               {isHost && (

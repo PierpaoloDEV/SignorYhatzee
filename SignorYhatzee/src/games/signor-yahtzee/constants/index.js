@@ -47,7 +47,7 @@ export const SPECIAL_RULES = [
   { key: "nico_rule", title: "Regola Nico", desc: "Se rilanci 4 o più dadi in un turno (non al primo lancio), bevi." },
   { key: "social_envy", title: "Invidia Sociale", desc: "Scala Piccola: bevono chi ha MENO punti di te. Scala Grande: bevono chi ha PIÙ punti di te. Se nessuno soddisfa la condizione, bevi tu." },
   { key: "seven_devils", title: "Sette Diavoli", desc: "Se la somma dei tuoi dadi dopo un lancio è un multiplo di 7, bevono tutti!" },
-  { key: "copycat", title: "Copycat", desc: "Se scegli la stessa categoria dell'ultimo giocatore, bevi." },
+  { key: "copycat", title: "Copycat", desc: "Se scegli il punteggio dell'ultima categoria giocata (dall'ultimo giocatore), bevi." },
   { key: "auto_trap", title: "Trappola Automatica", desc: "Ogni volta che segni punti (>0) su una categoria, viene automaticamente piazzata una trappola su di essa." },
   { key: "counter_trap", title: "Counterspell", desc: "Quando cadi in una trappola, sei tu a scegliere chi beve invece di bere tu." },
 ];
