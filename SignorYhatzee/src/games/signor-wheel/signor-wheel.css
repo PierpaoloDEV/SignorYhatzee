@@ -10,15 +10,17 @@
 
 .wheel-container {
   position: relative;
-  width: 360px;
-  height: 360px;
-  margin: 2rem auto;
+  width: 90vw;
+  max-width: 500px;
+  height: 90vw;
+  max-height: 500px;
+  margin: 1rem auto;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  /* Removed border and background */
+  touch-action: none;
 }
 
 .wheel {
@@ -45,13 +47,16 @@
 
 .wheel-segment-text {
   position: absolute;
-  top: 50%;
+  top: 0;
   left: 50%;
-  width: 0;
-  height: 0;
+  width: 40px;
+  height: 50%;
+  margin-left: -20px;
+  transform-origin: bottom center;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  padding-top: 8px; /* Partono quasi dal bordo esterno */
   color: white;
   font-weight: bold;
   text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
@@ -59,11 +64,50 @@
 
 .wheel-segment-content {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 8px;
+}
+
+.segment-label {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: -3px; /* avvicina le lettere per risparmiare spazio */
   white-space: nowrap;
-  /* Rotate 90deg so it aligns with the radius, reading from edge to center */
-  transform: rotate(90deg);
+}
+
+.wheel-center-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f97316, #ea580c);
+  border: 4px solid white;
+  color: white;
+  font-weight: 900;
+  font-size: 1.2rem;
+  z-index: 20;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  transition: transform 0.1s;
+}
+
+.wheel-center-btn:active {
+  transform: translate(-50%, -50%) scale(0.95);
+}
+
+.wheel-center-btn:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+  filter: grayscale(1);
 }
 
 .segment-icon {
@@ -75,15 +119,16 @@
 }
 
 @media (max-width: 480px) {
-  .wheel-container {
-    width: 300px;
-    height: 300px;
-  }
   .segment-icon {
     font-size: 1.2rem;
   }
   .segment-label {
     font-size: 0.85rem;
+  }
+  .wheel-center-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 0.9rem;
   }
 }
 

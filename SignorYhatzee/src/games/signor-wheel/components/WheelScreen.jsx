@@ -1,5 +1,6 @@
 import EventModal from './EventModal';
 import RulesModal from './RulesModal';
+import { useRef } from 'react';
 
 export default function WheelScreen({ state, onExit }) {
   const {
@@ -10,6 +11,35 @@ export default function WheelScreen({ state, onExit }) {
   } = state;
 
   const currentPlayer = players[currentPlayerIndex];
+  const touchStartRef = useRef(null);
+
+  const handleTouchStart = (e) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!touchStartRef.current) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+    if (Math.abs(deltaX) > 30 || Math.abs(deltaY) > 30) {
+      spinWheel();
+    }
+  };
+
+  const handleMouseDown = (e) => {
+    touchStartRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleMouseUp = (e) => {
+    if (!touchStartRef.current) return;
+    const deltaX = e.clientX - touchStartRef.current.x;
+    const deltaY = e.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+    if (Math.abs(deltaX) > 30 || Math.abs(deltaY) > 30) {
+      spinWheel();
+    }
+  };
 
   // Calculate conic gradient for the wheel
   const segmentAngle = 360 / currentWheelOptions.length;
@@ -33,8 +63,23 @@ export default function WheelScreen({ state, onExit }) {
 
       <RulesModal state={state} />
 
-      <div className="wheel-container">
+      <div 
+        className="wheel-container"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+      >
         <div className="wheel-pointer">▼</div>
+        
+        <button 
+          className="wheel-center-btn" 
+          onClick={spinWheel} 
+          disabled={eventModalOpen || spinning}
+        >
+          {spinning ? '...' : 'Gira'}
+        </button>
+
         <div 
           className="wheel" 
           style={{ 
@@ -50,7 +95,7 @@ export default function WheelScreen({ state, onExit }) {
                 key={i} 
                 className="wheel-segment-text"
                 style={{
-                  transform: `rotate(${rotationAngle}deg) translateY(-120px)` 
+                  transform: `rotate(${rotationAngle}deg)`
                 }}
               >
                 <div className="wheel-segment-content">
@@ -60,12 +105,6 @@ export default function WheelScreen({ state, onExit }) {
             );
           })}
         </div>
-      </div>
-
-      <div className="drago-controls glass-panel">
-        <button className="btn btn-primary" style={{ flex: 1, fontSize: '1.2rem', padding: '15px' }} onClick={spinWheel} disabled={eventModalOpen || spinning}>
-          {spinning ? '⏳ Gira...' : '🎡 Gira la ruota'}
-        </button>
       </div>
 
       {eventModalOpen && activeResult && <EventModal result={activeResult} onClose={closeEventModal} />}
