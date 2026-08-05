@@ -11,7 +11,7 @@ export default function RulesModal({ state }) {
         style={{
           position: 'fixed',
           top: '12px',
-          left: '12px',
+          right: '12px',
           zIndex: 2000,
           background: 'rgba(255,255,255,0.15)',
           border: '2px solid rgba(255,255,255,0.35)',

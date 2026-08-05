@@ -35,8 +35,9 @@ export function useWheelGame() {
   const [spinning, setSpinning] = useState(false);
   const [activeResult, setActiveResult] = useState(null);
   const [eventModalOpen, setEventModalOpen] = useState(false);
-  const [rotation, setRotation] = useState(0);
+  const [rotation, setRotation] = useState(0); // This will now represent the translate offset
   const [currentWheelOptions, setCurrentWheelOptions] = useState(BASE_WHEEL_OPTIONS);
+  const [stripItems, setStripItems] = useState([]);
   const [snakeEyesPlayerIndex, setSnakeEyesPlayerIndex] = useState(null);
   const [thumbKingPlayerIndex, setThumbKingPlayerIndex] = useState(null);
 
@@ -55,6 +56,10 @@ export function useWheelGame() {
     setActiveResult(null);
     setEventModalOpen(false);
     setRotation(0);
+    
+    // Inizializza la striscia con un po' di oggetti casuali
+    setStripItems(Array.from({ length: 15 }, () => BASE_WHEEL_OPTIONS[Math.floor(Math.random() * BASE_WHEEL_OPTIONS.length)]));
+    
     setSnakeEyesPlayerIndex(null);
     setThumbKingPlayerIndex(null);
     setPhase('playing');
@@ -73,30 +78,27 @@ export function useWheelGame() {
       result = currentWheelOptions[resultIndex];
     } while (activeResult && result.label === activeResult.label && currentWheelOptions.length > 1);
     
-    const segmentAngle = 360 / currentWheelOptions.length;
+    const itemWidth = 150; // La larghezza in pixel di ogni carta
+    const winningIndex = 65; // L'oggetto vincente sarà 65 carte più avanti
+    const totalStripLength = 80;
     
-    // Più giri extra per far sembrare il lancio più "veloce/casuale"
-    const extraSpins = 8 + Math.floor(Math.random() * 8); // 8 to 15 full spins
-    
-    const segmentCenter = (resultIndex * segmentAngle) + (segmentAngle / 2);
-    const targetOffset = 360 - segmentCenter;
-    
-    const randomOffset = Math.floor(Math.random() * (segmentAngle * 0.8)) - (segmentAngle * 0.4); 
-    
-    const totalNewAngle = (extraSpins * 360) + targetOffset + randomOffset;
-
-    
-    console.log(`Spinning: resultIndex=${resultIndex}, label=${result.label}, totalNewAngle=${totalNewAngle}`);
-
-    setRotation(prev => {
-      const currentMod = prev % 360;
-      // FIX: If prev is negative, % operator is negative. Use absolute modulo.
-      const safeMod = ((prev % 360) + 360) % 360; 
-      const baseRotation = prev - safeMod;
-      const newRot = baseRotation + totalNewAngle;
-      console.log(`Rotation: prev=${prev}, base=${baseRotation}, new=${newRot}`);
-      return newRot;
+    // Crea la nuova striscia da appendere
+    const newStrip = Array.from({ length: totalStripLength }, (_, i) => {
+      if (i === winningIndex) return result;
+      return currentWheelOptions[Math.floor(Math.random() * currentWheelOptions.length)];
     });
+    
+    // Calcoliamo l'indice assoluto nella striscia cumulativa
+    const currentLength = stripItems.length;
+    const absoluteWinningIndex = currentLength + winningIndex;
+
+    // Aggiungiamo alla striscia esistente (così l'offset precedente resta valido e l'animazione parte fluida)
+    setStripItems(prev => [...prev, ...newStrip]);
+
+    const randomPixelOffset = Math.floor(Math.random() * (itemWidth - 10)) - (itemWidth / 2 - 5);
+    const targetOffset = (absoluteWinningIndex * itemWidth) + (itemWidth / 2) + randomPixelOffset;
+
+    setRotation(targetOffset);
 
     setTimeout(() => {
       setActiveResult(result);
@@ -132,7 +134,7 @@ export function useWheelGame() {
   return {
     phase, playerNames, setPlayerNames, players, currentPlayerIndex,
     spinning, rotation, activeResult, eventModalOpen, currentWheelOptions,
-    snakeEyesPlayerIndex, thumbKingPlayerIndex,
+    snakeEyesPlayerIndex, thumbKingPlayerIndex, stripItems,
     startGame, spinWheel, closeEventModal, resetGame,
     MAX_PLAYERS, MIN_PLAYERS
   };

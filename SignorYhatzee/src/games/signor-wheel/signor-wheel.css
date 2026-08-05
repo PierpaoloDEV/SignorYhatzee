@@ -2,133 +2,119 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center; /* Centra verticalmente gli elementi (titolo, cassa, pulsante) */
   padding: 1rem;
   max-width: 800px;
   margin: 0 auto;
   min-height: 100vh;
 }
 
-.wheel-container {
+/* ── CS:GO Slider ── */
+.cs-slider-container {
   position: relative;
   width: 90vw;
-  max-width: 500px;
-  height: 90vw;
-  max-height: 500px;
-  margin: 1rem auto;
-  border-radius: 50%;
+  max-width: 800px;
+  height: 180px;
+  margin: 2rem auto;
+  border-radius: 12px;
   display: flex;
-  justify-content: center;
   align-items: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  touch-action: none;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5);
+  touch-action: pan-y;
+  background: #111;
 }
 
-.wheel {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
+.cs-slider-pointer {
   position: absolute;
+  left: 50%;
   top: 0;
-  left: 0;
-  /* Will-change for smoother animation */
-  will-change: transform;
+  bottom: 0;
+  width: 4px;
+  background: #ffcc00;
+  transform: translateX(-50%);
+  z-index: 10;
+  box-shadow: 0 0 10px #ffcc00, 0 0 20px #ffcc00;
 }
 
-.wheel-pointer {
+/* Freccette sopra e sotto */
+.cs-slider-pointer::before,
+.cs-slider-pointer::after {
+  content: '';
   position: absolute;
-  top: -20px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 2.5rem;
-  color: white;
-  z-index: 10;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
 }
-
-.wheel-segment-text {
-  position: absolute;
+.cs-slider-pointer::before {
   top: 0;
-  left: 50%;
-  width: 40px;
-  height: 50%;
-  margin-left: -20px;
-  transform-origin: bottom center;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 8px; /* Partono quasi dal bordo esterno */
-  color: white;
-  font-weight: bold;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+  border-top: 12px solid #ffcc00;
+}
+.cs-slider-pointer::after {
+  bottom: 0;
+  border-bottom: 12px solid #ffcc00;
 }
 
-.wheel-segment-content {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.segment-label {
-  writing-mode: vertical-rl;
-  text-orientation: upright;
-  font-size: 1rem;
-  text-transform: uppercase;
-  letter-spacing: -3px; /* avvicina le lettere per risparmiare spazio */
-  white-space: nowrap;
-}
-
-.wheel-center-btn {
+.cs-slider-strip-wrapper {
   position: absolute;
-  top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #f97316, #ea580c);
-  border: 4px solid white;
-  color: white;
-  font-weight: 900;
-  font-size: 1.2rem;
-  z-index: 20;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  top: 0;
+  bottom: 0;
+  /* transform: translateX(...) gestito da React */
+}
+
+.cs-slider-strip {
   display: flex;
-  align-items: center;
+  height: 100%;
+}
+
+.cs-card {
+  width: 150px;
+  height: 100%;
+  flex-shrink: 0;
+  border-right: 2px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
   justify-content: center;
-  text-transform: uppercase;
-  transition: transform 0.1s;
+  align-items: center;
+  padding: 10px;
+  box-sizing: border-box;
+  text-align: center;
+  position: relative;
+}
+.cs-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: inherit;
 }
 
-.wheel-center-btn:active {
-  transform: translate(-50%, -50%) scale(0.95);
+.cs-card-icon {
+  font-size: 3rem;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
 }
 
-.wheel-center-btn:disabled {
-  opacity: 0.8;
-  cursor: not-allowed;
-  filter: grayscale(1);
-}
-
-.segment-icon {
-  font-size: 1.4rem;
-}
-
-.segment-label {
+.cs-card-label {
   font-size: 1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
 }
 
-@media (max-width: 480px) {
-  .segment-icon {
-    font-size: 1.2rem;
+@media (max-width: 600px) {
+  .cs-slider-container {
+    height: 150px;
   }
-  .segment-label {
+  .cs-card-icon {
+    font-size: 2.2rem;
+  }
+  .cs-card-label {
     font-size: 0.85rem;
-  }
-  .wheel-center-btn {
-    width: 60px;
-    height: 60px;
-    font-size: 0.9rem;
   }
 }
 

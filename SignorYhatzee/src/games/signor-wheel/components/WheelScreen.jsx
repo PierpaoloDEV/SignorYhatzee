@@ -5,7 +5,7 @@ import { useRef } from 'react';
 export default function WheelScreen({ state, onExit }) {
   const {
     players, currentPlayerIndex, spinning, rotation,
-    activeResult, eventModalOpen, currentWheelOptions, 
+    activeResult, eventModalOpen, stripItems, 
     snakeEyesPlayerIndex, thumbKingPlayerIndex, 
     spinWheel, closeEventModal
   } = state;
@@ -41,13 +41,7 @@ export default function WheelScreen({ state, onExit }) {
     }
   };
 
-  // Calculate conic gradient for the wheel
-  const segmentAngle = 360 / currentWheelOptions.length;
-  const conicGradient = currentWheelOptions.map((opt, i) => {
-    const start = i * segmentAngle;
-    const end = (i + 1) * segmentAngle;
-    return `${opt.color} ${start}deg ${end}deg`;
-  }).join(', ');
+
 
   return (
     <div className="drago-board-shell wheel-board-shell">
@@ -64,47 +58,53 @@ export default function WheelScreen({ state, onExit }) {
       <RulesModal state={state} />
 
       <div 
-        className="wheel-container"
+        className="cs-slider-container glass-panel"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
       >
-        <div className="wheel-pointer">▼</div>
+        <div className="cs-slider-pointer"></div>
         
-        <button 
-          className="wheel-center-btn" 
-          onClick={spinWheel} 
-          disabled={eventModalOpen || spinning}
-        >
-          {spinning ? '...' : 'Gira'}
-        </button>
-
         <div 
-          className="wheel" 
+          className="cs-slider-strip-wrapper"
           style={{ 
-            background: `conic-gradient(${conicGradient})`,
-            transform: `rotate(${rotation}deg)`,
-            transition: 'transform 4s cubic-bezier(0.2, 0.8, 0.2, 1)'
+            position: 'absolute',
+            left: '50%',
+            top: 0,
+            bottom: 0,
+            transform: `translateX(-${rotation}px)`,
+            transition: spinning ? 'transform 4s cubic-bezier(0.1, 0.7, 0.1, 1)' : 'none'
           }}
         >
-          {currentWheelOptions.map((opt, i) => {
-            const rotationAngle = (i * segmentAngle) + (segmentAngle / 2);
-            return (
+          <div className="cs-slider-strip">
+            {stripItems.map((opt, i) => (
               <div 
                 key={i} 
-                className="wheel-segment-text"
+                className="cs-card"
                 style={{
-                  transform: `rotate(${rotationAngle}deg)`
+                  borderColor: opt.color,
+                  boxShadow: `0 4px 15px ${opt.color}40`,
+                  background: `linear-gradient(135deg, rgba(255,255,255,0.05), ${opt.color}30)`
                 }}
               >
-                <div className="wheel-segment-content">
-                  <span className="segment-label">{opt.label}</span>
-                </div>
+                <span className="cs-card-icon">{opt.icon}</span>
+                <span className="cs-card-label" style={{ color: opt.color }}>{opt.label}</span>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
+      </div>
+
+      <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        <button 
+          className="btn btn-primary" 
+          onClick={spinWheel} 
+          disabled={eventModalOpen || spinning}
+          style={{ fontSize: '1.2rem', padding: '15px 40px' }}
+        >
+          {spinning ? 'Apertura in corso...' : 'Apri Cassa'}
+        </button>
       </div>
 
       {eventModalOpen && activeResult && <EventModal result={activeResult} onClose={closeEventModal} />}
