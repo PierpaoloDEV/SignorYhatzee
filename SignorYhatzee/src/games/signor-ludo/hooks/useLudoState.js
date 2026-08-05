@@ -128,6 +128,18 @@ export function useLudoState() {
   const [captureMsg, setCaptureMsg] = useState(null);
   const [finishOrder, setFinishOrder] = useState([]); // colors in finish order
   const [rollCount, setRollCount] = useState(0); // consecutive 6s safety
+  
+  // Alcoholic rules state
+  const [popup, setPopup] = useState(null);
+  const [inactiveTurns, setInactiveTurns] = useState([0, 0, 0, 0]);
+
+  const handleClosePopup = () => {
+    setPopup(null);
+  };
+
+  const isPlayerImmune = (c) => {
+    return tokens[c].some(t => SAFE_CELLS.has(t.pos));
+  };
 
   const color = COLORS[currentPlayer];
 
@@ -149,6 +161,8 @@ export function useLudoState() {
     setCaptureMsg(null);
     setFinishOrder([]);
     setRollCount(0);
+    setPopup(null);
+    setInactiveTurns([0, 0, 0, 0]);
     setScreen("game");
   };
 
@@ -166,6 +180,8 @@ export function useLudoState() {
     setCaptureMsg(null);
     setFinishOrder([]);
     setRollCount(0);
+    setPopup(null);
+    setInactiveTurns([0, 0, 0, 0]);
   };
 
   // ─── Roll dice ───────────────────────────────────────────────────────────────
@@ -203,6 +219,17 @@ export function useLudoState() {
       setRolling(false);
       setHasRolled(true);
 
+      const currentName = playerNames[currentPlayer] || COLOR_LABELS[COLORS[currentPlayer]];
+
+      // Check for 3 consecutive 6s
+      if (rollCount === 2 && vals.includes(6)) {
+        setPopup(`🎲🎲🎲 3 VOLTE 6!\n${currentName}, il tuo turno finisce immediatamente e BEVI x3! 🍺🍺🍺`);
+        // Disable moving for this roll
+        setUsedDice(vals.map(() => true));
+        setTimeout(() => advanceTurn(false, false), 1500);
+        return;
+      }
+
       // Determine which tokens can move for the first die
       const val = vals[0];
       const myTokens = tokens[COLORS[currentPlayer]];
@@ -214,7 +241,6 @@ export function useLudoState() {
           const movable2 = myTokens.filter((t) => isValidMove(t, vals[1]));
           if (movable2.length === 0) {
             setTimeout(() => advanceTurn(vals.includes(6), false), 800);
-            return;
           } else {
             setActiveDieIndex(1);
             setSelectableTokens(movable2.map(t => t.id));
@@ -226,6 +252,11 @@ export function useLudoState() {
         setTimeout(() => moveToken(movable[0].id, val, tokens, 0, [false], vals), 400);
       } else {
         setSelectableTokens(movable.map((t) => t.id));
+      }
+
+      // Check for 6 ( Alcoholic rule )
+      if (vals.includes(6)) {
+        setPopup(`${currentName} ha fatto 6!\nScegli chi beve e ritira!`);
       }
     }, 600);
   };
@@ -272,14 +303,32 @@ export function useLudoState() {
 
     setTokens(newTokens);
 
+    let popupMsg = [];
+
     if (captured) {
+      const capturedName = playerNames[COLORS.indexOf(captured)] || COLOR_LABELS[captured];
       setCaptureMsg(`💥 ${COLOR_LABELS[color]} ha catturato una pedina di ${COLOR_LABELS[captured]}!`);
+      if (!isPlayerImmune(captured)) {
+        popupMsg.push(`💥 ${capturedName} è stato mangiato! Beve 2 sorsi!`);
+      } else {
+        popupMsg.push(`💥 ${capturedName} è stato mangiato, ma è su una casella sicura ed è immune!`);
+      }
     }
 
     let gameOver = false;
     if (newPos === 105) {
       const newFinishOrder = finishOrder.includes(color) ? finishOrder : [...finishOrder, color];
       setFinishOrder(newFinishOrder);
+
+      const currentName = playerNames[currentPlayer] || COLOR_LABELS[color];
+      const victims = COLORS.filter(c => c !== color && !isPlayerImmune(c));
+      const immune = COLORS.filter(c => c !== color && isPlayerImmune(c));
+      
+      let msg = `🏁 ${currentName} ha portato una pedina al traguardo!\nTutti gli altri bevono!`;
+      if (immune.length > 0) {
+        msg += `\n(Immuni: ${immune.map(c => playerNames[COLORS.indexOf(c)] || COLOR_LABELS[c]).join(', ')})`;
+      }
+      popupMsg.push(msg);
 
       if (reallyAllFinished) {
         const updatedOrder = [...finishOrder, color];
@@ -291,6 +340,10 @@ export function useLudoState() {
           setFinishOrder(updatedOrder);
         }
       }
+    }
+    
+    if (popupMsg.length > 0) {
+      setPopup(prev => prev ? prev + "\n\n" + popupMsg.join("\n\n") : popupMsg.join("\n\n"));
     }
 
     if (gameOver) return;
@@ -332,6 +385,23 @@ export function useLudoState() {
   const advanceTurn = (getsExtra, movedSuccessfully) => {
     setHasRolled(false);
     setSelectableTokens([]);
+    
+    // Check inactive turns for current player
+    const isInactive = tokens[COLORS[currentPlayer]].every(t => t.pos === -1 || t.pos === 105);
+    setInactiveTurns(prev => {
+      const newTurns = [...prev];
+      if (isInactive) {
+        newTurns[currentPlayer] += 1;
+        if (newTurns[currentPlayer] >= 3) {
+          const currentName = playerNames[currentPlayer] || COLOR_LABELS[COLORS[currentPlayer]];
+          setPopup(p => p ? p + `\n\n💤 ${currentName} è inattivo da 3 turni! Beve!` : `💤 ${currentName} è inattivo da 3 turni! Beve!`);
+          newTurns[currentPlayer] = 0; // reset
+        }
+      } else {
+        newTurns[currentPlayer] = 0;
+      }
+      return newTurns;
+    });
 
     if (getsExtra) {
       setExtraRoll(true);
@@ -384,5 +454,6 @@ export function useLudoState() {
     color,
     pawnsCount, setPawnsCount,
     diceCount, setDiceCount,
+    popup, handleClosePopup
   };
 }

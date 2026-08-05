@@ -1,4 +1,6 @@
 import { COLORS, COLOR_EMOJIS, COLOR_LABELS, ENTRY_CELL, SAFE_CELLS } from "../hooks/useLudoState";
+import DrinkPopup from "./modals/DrinkPopup";
+import RulesInfoModal from "./modals/RulesInfoModal";
 
 // ─── Board geometry ────────────────────────────────────────────────────────────
 // The classic Ludo board is a 15×15 grid.
@@ -384,6 +386,8 @@ export default function BoardScreen({ state, onExit }) {
 
   return (
     <div className="ludo-game-screen app">
+      <RulesInfoModal />
+      <DrinkPopup state={state} />
       <div className="glass-panel" style={{ width: "100%", maxWidth: BOARD_SIZE + 40, padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
         {/* Header */}
         <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
