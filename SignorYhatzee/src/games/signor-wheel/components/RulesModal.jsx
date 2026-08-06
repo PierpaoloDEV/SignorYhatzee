@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export default function RulesModal({ state }) {
-  const { players, snakeEyesPlayerIndex, thumbKingPlayerIndex } = state;
+  const { players, snakeEyesPlayerIndex, thumbKingPlayerIndex, nameChangedPlayers, twinPlayerIndex, zenPlayerIndex, foreignerPlayerIndex, pastaPlayerIndex, customRules } = state;
   const [open, setOpen] = useState(false);
 
   return (
@@ -99,9 +99,97 @@ export default function RulesModal({ state }) {
                     👍 Nessuno è attualmente il Re del Pollice.
                   </div>
                 )}
+
+                {nameChangedPlayers && nameChangedPlayers.length > 0 ? (
+                  nameChangedPlayers.map((playerIndex) => (
+                    <div key={playerIndex} className="status-indicator name-change-indicator" style={{ position: 'relative', top: 0, right: 0, width: '100%' }}>
+                      <span className="status-icon">📛</span>
+                      <div className="status-text">
+                        <span>Ha cambiato nome:</span>
+                        <strong style={{ color: players[playerIndex]?.color, fontSize: '1.1rem' }}>{players[playerIndex]?.name}</strong>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', color: '#888' }}>
+                    📛 Nessun giocatore ha cambiato nome.
+                  </div>
+                )}
+
+                {twinPlayerIndex !== null && players[twinPlayerIndex] ? (
+                  <div className="status-indicator twin-indicator" style={{ position: 'relative', top: 0, right: 0, width: '100%' }}>
+                    <span className="status-icon">👯</span>
+                    <div className="status-text">
+                      <span>Gemelli:</span>
+                      <strong style={{ color: players[twinPlayerIndex].color, fontSize: '1.1rem', marginLeft: '5px' }}>{players[twinPlayerIndex].name}</strong>
+                      <span style={{ marginLeft: '5px' }}>è gemello di</span>
+                      <strong style={{ color: players[(twinPlayerIndex + 1) % players.length].color, fontSize: '1.1rem', marginLeft: '5px' }}>{players[(twinPlayerIndex + 1) % players.length].name}</strong>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', color: '#888' }}>
+                    👯 Nessuno è attualmente gemello.
+                  </div>
+                )}
+
+                {zenPlayerIndex !== null && players[zenPlayerIndex] ? (
+                  <div className="status-indicator zen-indicator" style={{ position: 'relative', top: 0, right: 0, width: '100%' }}>
+                    <span className="status-icon">🧘</span>
+                    <div className="status-text">
+                      <span>Stato Zen:</span>
+                      <strong style={{ color: players[zenPlayerIndex].color, fontSize: '1.1rem', marginLeft: '5px' }}>{players[zenPlayerIndex].name}</strong>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', color: '#888' }}>
+                    🧘 Nessuno è in stato Zen.
+                  </div>
+                )}
+
+                {foreignerPlayerIndex !== null && players[foreignerPlayerIndex] ? (
+                  <div className="status-indicator foreigner-indicator" style={{ position: 'relative', top: 0, right: 0, width: '100%' }}>
+                    <span className="status-icon">🌎</span>
+                    <div className="status-text">
+                      <span>Straniero:</span>
+                      <strong style={{ color: players[foreignerPlayerIndex].color, fontSize: '1.1rem', marginLeft: '5px' }}>{players[foreignerPlayerIndex].name}</strong>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', color: '#888' }}>
+                    🌎 Nessuno sta parlando da Straniero.
+                  </div>
+                )}
+
+                {pastaPlayerIndex !== null && players[pastaPlayerIndex] ? (
+                  <div className="status-indicator pasta-indicator" style={{ position: 'relative', top: 0, right: 0, width: '100%' }}>
+                    <span className="status-icon">🍝</span>
+                    <div className="status-text">
+                      <span>Maledizione della Pasta:</span>
+                      <strong style={{ color: players[pastaPlayerIndex].color, fontSize: '1.1rem', marginLeft: '5px' }}>{players[pastaPlayerIndex].name}</strong>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', color: '#888' }}>
+                    🍝 Nessuno ha la maledizione della Pasta.
+                  </div>
+                )}
               </div>
 
-              <h3 style={{ color: '#f97316', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>Regole Speciali</h3>
+              {customRules && customRules.length > 0 && (
+                <>
+                  <h3 style={{ color: '#dc143c', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px', marginTop: '30px' }}>📜 Regole Aggiunte</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '30px' }}>
+                    {customRules.map((cr, idx) => (
+                      <div key={idx} style={{ padding: '12px', background: 'rgba(220, 20, 60, 0.1)', border: '1px solid rgba(220, 20, 60, 0.3)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '4px' }}>Aggiunta da <strong style={{ color: cr.color }}>{cr.author}</strong></div>
+                        <div style={{ color: '#fff', fontSize: '1.05rem', lineHeight: '1.4' }}>"{cr.rule}"</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <h3 style={{ color: '#f97316', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px', marginTop: customRules && customRules.length > 0 ? '0' : '30px' }}>Regole Speciali</h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
@@ -111,6 +199,30 @@ export default function RulesModal({ state }) {
                 <div>
                   <strong style={{ color: '#fff', fontSize: '1.1rem' }}>👍 Re del Pollice</strong>
                   <p style={{ margin: '5px 0 0 0', color: '#ccc', lineHeight: '1.4' }}>Il re del pollice può mettere il pollice sul tavolo in qualsiasi momento. L'ultimo che lo nota e lo fa, beve! Resta re finché non lo diventa un altro.</p>
+                </div>
+                <div>
+                  <strong style={{ color: '#fff', fontSize: '1.1rem' }}>📛 Cambio Nome</strong>
+                  <p style={{ margin: '5px 0 0 0', color: '#ccc', lineHeight: '1.4' }}>Se a un giocatore esce "Cambio Nome", deve scegliere un nuovo nome. Da quel momento in poi, e per tutto il resto della partita, chiunque lo chiami con il suo vecchio nome deve bere.</p>
+                </div>
+                <div>
+                  <strong style={{ color: '#fff', fontSize: '1.1rem' }}>👯 Gemelli</strong>
+                  <p style={{ margin: '5px 0 0 0', color: '#ccc', lineHeight: '1.4' }}>Chi pesca "Gemelli" diventa il gemello del giocatore dopo di lui fino al suo prossimo turno. Deve ripetere ogni singolo movimento che il gemello sta facendo. Beve ogni volta che non lo fa!</p>
+                </div>
+                <div>
+                  <strong style={{ color: '#fff', fontSize: '1.1rem' }}>🧘 Stato Zen</strong>
+                  <p style={{ margin: '5px 0 0 0', color: '#ccc', lineHeight: '1.4' }}>Chi entra in stato "Zen" deve tenere gli occhi chiusi fino all'inizio del suo prossimo turno. Beve ogni volta che li apre!</p>
+                </div>
+                <div>
+                  <strong style={{ color: '#fff', fontSize: '1.1rem' }}>🌎 Straniero</strong>
+                  <p style={{ margin: '5px 0 0 0', color: '#ccc', lineHeight: '1.4' }}>Chi pesca "Straniero" deve parlare con un accento diverso o in un'altra lingua fino al suo prossimo turno. Se sbaglia o se ne dimentica, beve!</p>
+                </div>
+                <div>
+                  <strong style={{ color: '#fff', fontSize: '1.1rem' }}>🍝 Maledizione della Pasta</strong>
+                  <p style={{ margin: '5px 0 0 0', color: '#ccc', lineHeight: '1.4' }}>Chi pesca "Pasta" deve inserire almeno un formato di pasta in ogni frase che pronuncia, fino al suo prossimo turno. Chi sbaglia o dimentica di dirlo, beve!</p>
+                </div>
+                <div>
+                  <strong style={{ color: '#fff', fontSize: '1.1rem' }}>📜 Crea Regola</strong>
+                  <p style={{ margin: '5px 0 0 0', color: '#ccc', lineHeight: '1.4' }}>Chi pesca "Regola" può inventare una qualsiasi penalità e scriverla nel popup. La regola rimarrà attiva per tutto il resto della partita!</p>
                 </div>
               </div>
             </div>

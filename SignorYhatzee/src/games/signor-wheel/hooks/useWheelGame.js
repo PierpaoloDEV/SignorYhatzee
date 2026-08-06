@@ -16,6 +16,23 @@ const BASE_WHEEL_OPTIONS = [
   { label: 'Destra', color: '#00cccc', icon: '👉', text: 'Beve il giocatore alla tua destra!' },
   { label: 'Occhi Serpente', color: '#8b0000', icon: '🐍', text: 'Adesso hai gli occhi di serpente. Se incroci lo sguardo con un partecipante, lui/lei deve bere. Dura finché non li riceve un altro.', type: 'snake' },
   { label: 'Re del Pollice', color: '#b8860b', icon: '👍', text: 'Sei il re del pollice. Metti il pollice sul tavolo quando vuoi: l\'ultimo a farlo beve! Resti re finché non lo diventa un altro.', type: 'thumb' },
+  { label: 'Bomba', color: '#ff0000', icon: '💣', text: 'Tieni gli occhi chiusi mentre gli altri partecipanti si passano la bomba l\'un l\'altro. Urla \'BOMBA\' in qualsiasi momento per far esplodere la bomba. chi la stava tenendo in quel momento beve.' },
+  { label: 'Cambio Nome', color: '#8a2be2', icon: '📛', text: 'Scegli un nuovo nome. D\'ora in poi chiunque ti chiami col tuo vecchio nome deve bere (segnalo nelle regole extra, questo rimane attivo per tutta la partita e per tutti i giocatori a cui esce).', type: 'nameChange' },
+  { label: 'Categorie', color: '#ff1493', icon: '📝', text: 'Scegli una categoria, iniziando da te scegli un elemento di quella categoria e a turno continuate. il primo che sbaglia o ripete beve.' },
+  { label: 'Chi è più', color: '#00ff7f', icon: '👆', text: 'Di qualcosa che inizi con "chi è più". tutti i partecipanti devono indicare la persona che corrisponde di più alla domanda. chi ha più dita puntate beve.' },
+  { label: 'Gemelli', color: '#ff8c00', icon: '👯', text: 'Devi diventare il gemello del giocatore dopo di te fino al tuo prossimo turno. Devi ripetere ogni singolo movimento che sta facendo. Bevi ogni volta che non ripeti un movimento (segnalo nel riepilogo e ricorda dura fino al prossimo turno del giocatore a cui è uscito).', type: 'twin' },
+  { label: 'Non ho mai', color: '#4b0082', icon: '🙅‍♂️', text: 'Di qualcosa che non hai mai fatto. Chi l\'ha fatto deve bere.' },
+  { label: 'Social', color: '#ff69b4', icon: '🥂', text: 'Brindisi collettivo! Bevono tutti.' },
+  { label: 'Vero o Falso', color: '#1e90ff', icon: '🎭', text: 'Di qualcosa, gli altri partecipanti devono indovinare se è vero o falso. Chi sbaglia beve.' },
+  { label: 'Zen', color: '#2e8b57', icon: '🧘', text: 'Tieni gli occhi chiusi fino al tuo prossimo turno. Devi bere ogni volta che li apri (segnalo nel riepilogo e ricorda: dura fino al tuo prossimo turno).', type: 'zen' },
+  { label: 'Testa o Croce', color: '#ffd700', icon: '💰', text: 'Lancia una moneta (o usa un\'app) e chiama testa o croce. Se sbagli bevi tu, se indovini bevono tutti gli altri!' },
+  { label: 'Swing', color: '#ff4500', icon: '💃', text: 'Fai un passo di danza o un gesto. A turno bisogna ripetere tutti i movimenti fatti dai giocatori precedenti e aggiungerne uno nuovo. Il primo che sbaglia o dimentica un movimento beve!' },
+  { label: 'Straniero', color: '#8b4513', icon: '🌎', text: 'Cambia lingua o accento fino al tuo prossimo turno. Se sbagli a parlare o te ne dimentichi, bevi!', type: 'foreigner' },
+  { label: 'Karaoke', color: '#ff69b4', icon: '🎤', text: 'Inizia a cantare una canzone. Gli altri devono cantare con te la stessa canzone. Chi non canta o non la conosce beve!' },
+  { label: 'Frase', color: '#00ced1', icon: '💬', text: 'Dì una parola. Il prossimo deve aggiungere una parola per formare una frase, e così via. Il primo che non trova una parola valida beve!' },
+  { label: 'Buzz', color: '#ffff00', icon: '🐝', text: 'Scegli un numero e inizia a contare. Invece di dire il numero 4 (o numeri che lo contengono) bisogna dire "BUZZ". Chi sbaglia beve!' },
+  { label: 'Pasta', color: '#f4a460', icon: '🍝', text: 'Fino al tuo prossimo turno devi inserire almeno un formato di pasta in ogni tua frase. Se sbagli o te ne dimentichi, bevi!', type: 'pasta' },
+  { label: 'Regola', color: '#dc143c', icon: '📜', text: 'Crea una nuova regola! Chi non la rispetta deve bere. Scrivi la tua regola nel box qui sotto.', type: 'customRule' },
 ];
 
 function shuffleArray(array) {
@@ -40,6 +57,12 @@ export function useWheelGame() {
   const [stripItems, setStripItems] = useState([]);
   const [snakeEyesPlayerIndex, setSnakeEyesPlayerIndex] = useState(null);
   const [thumbKingPlayerIndex, setThumbKingPlayerIndex] = useState(null);
+  const [nameChangedPlayers, setNameChangedPlayers] = useState([]);
+  const [twinPlayerIndex, setTwinPlayerIndex] = useState(null);
+  const [zenPlayerIndex, setZenPlayerIndex] = useState(null);
+  const [foreignerPlayerIndex, setForeignerPlayerIndex] = useState(null);
+  const [pastaPlayerIndex, setPastaPlayerIndex] = useState(null);
+  const [customRules, setCustomRules] = useState([]);
 
   const startGame = useCallback(() => {
     const names = playerNames.map((n) => n.trim()).filter(Boolean).slice(0, MAX_PLAYERS);
@@ -55,13 +78,23 @@ export function useWheelGame() {
     setSpinning(false);
     setActiveResult(null);
     setEventModalOpen(false);
-    setRotation(0);
+    const initialItemCount = 30;
+    const initialCenterIndex = 15;
+    const itemWidth = 150;
+    
+    setRotation((initialCenterIndex * itemWidth) + (itemWidth / 2));
     
     // Inizializza la striscia con un po' di oggetti casuali
-    setStripItems(Array.from({ length: 15 }, () => BASE_WHEEL_OPTIONS[Math.floor(Math.random() * BASE_WHEEL_OPTIONS.length)]));
+    setStripItems(Array.from({ length: initialItemCount }, () => BASE_WHEEL_OPTIONS[Math.floor(Math.random() * BASE_WHEEL_OPTIONS.length)]));
     
     setSnakeEyesPlayerIndex(null);
     setThumbKingPlayerIndex(null);
+    setNameChangedPlayers([]);
+    setTwinPlayerIndex(null);
+    setZenPlayerIndex(null);
+    setForeignerPlayerIndex(null);
+    setPastaPlayerIndex(null);
+    setCustomRules([]);
     setPhase('playing');
   }, [playerNames]);
 
@@ -111,13 +144,47 @@ export function useWheelGame() {
       if (result.type === 'thumb') {
         setThumbKingPlayerIndex(currentPlayerIndex);
       }
+      if (result.type === 'nameChange') {
+        setNameChangedPlayers(prev => Array.from(new Set([...prev, currentPlayerIndex])));
+      }
+      if (result.type === 'twin') {
+        setTwinPlayerIndex(currentPlayerIndex);
+      }
+      if (result.type === 'zen') {
+        setZenPlayerIndex(currentPlayerIndex);
+      }
+      if (result.type === 'foreigner') {
+        setForeignerPlayerIndex(currentPlayerIndex);
+      }
+      if (result.type === 'pasta') {
+        setPastaPlayerIndex(currentPlayerIndex);
+      }
     }, ROLL_ANIM_MS);
   }, [players.length, currentPlayerIndex, eventModalOpen, spinning, currentWheelOptions]);
 
-  const closeEventModal = useCallback(() => {
+  const closeEventModal = useCallback((eventData = null) => {
     setEventModalOpen(false);
-    setCurrentPlayerIndex((i) => (i + 1) % players.length);
-  }, [players.length]);
+    
+    if (eventData && eventData.customRule) {
+      setCustomRules(prev => [...prev, { rule: eventData.customRule, author: players[currentPlayerIndex].name, color: players[currentPlayerIndex].color }]);
+    }
+    
+    const nextIndex = (currentPlayerIndex + 1) % players.length;
+    if (nextIndex === twinPlayerIndex) {
+      setTwinPlayerIndex(null);
+    }
+    if (nextIndex === zenPlayerIndex) {
+      setZenPlayerIndex(null);
+    }
+    if (nextIndex === foreignerPlayerIndex) {
+      setForeignerPlayerIndex(null);
+    }
+    if (nextIndex === pastaPlayerIndex) {
+      setPastaPlayerIndex(null);
+    }
+    
+    setCurrentPlayerIndex(nextIndex);
+  }, [players.length, currentPlayerIndex, twinPlayerIndex, zenPlayerIndex, foreignerPlayerIndex, pastaPlayerIndex]);
 
   const resetGame = useCallback(() => {
     setPhase('setup');
@@ -126,15 +193,28 @@ export function useWheelGame() {
     setSpinning(false);
     setActiveResult(null);
     setEventModalOpen(false);
-    setRotation(0);
+    
+    const initialItemCount = 30;
+    const initialCenterIndex = 15;
+    const itemWidth = 150;
+    
+    setRotation((initialCenterIndex * itemWidth) + (itemWidth / 2));
     setSnakeEyesPlayerIndex(null);
     setThumbKingPlayerIndex(null);
+    setNameChangedPlayers([]);
+    setTwinPlayerIndex(null);
+    setZenPlayerIndex(null);
+    setForeignerPlayerIndex(null);
+    setPastaPlayerIndex(null);
+    setCustomRules([]);
   }, []);
 
   return {
     phase, playerNames, setPlayerNames, players, currentPlayerIndex,
     spinning, rotation, activeResult, eventModalOpen, currentWheelOptions,
-    snakeEyesPlayerIndex, thumbKingPlayerIndex, stripItems,
+    snakeEyesPlayerIndex, thumbKingPlayerIndex, stripItems, nameChangedPlayers,
+    twinPlayerIndex, zenPlayerIndex, foreignerPlayerIndex, pastaPlayerIndex,
+    customRules,
     startGame, spinWheel, closeEventModal, resetGame,
     MAX_PLAYERS, MIN_PLAYERS
   };
