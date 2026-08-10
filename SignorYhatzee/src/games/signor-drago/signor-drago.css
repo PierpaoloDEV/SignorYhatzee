@@ -190,6 +190,15 @@
 }
 
 /* ── Controlli ────────────────────────────────────────────── */
+.drago-bottom-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .drago-controls {
   width: 100%;
   max-width: 480px;
@@ -348,15 +357,13 @@
     flex-shrink: 0;
   }
 
+  /* Il turno si legge dal colore del dado flottante, non serve più il banner. */
   .drago-turn-banner {
-    position: fixed;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 6px 14px;
-    font-size: .8rem;
-    z-index: 15;
-    white-space: nowrap;
+    display: none;
+  }
+
+  .back-btn {
+    display: none;
   }
 
   /* Riempie tutto lo spazio residuo verticale: il tabellone si adatta al
@@ -449,6 +456,20 @@
 .drago-confirm-actions .btn {
   flex: 1;
   padding: 12px;
+}
+
+.drago-confirm-extra {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: .85rem;
+  cursor: pointer;
+}
+.drago-confirm-extra:hover {
+  color: var(--text);
 }
 
 /* ── Modale evento casella ────────────────────────────────── */

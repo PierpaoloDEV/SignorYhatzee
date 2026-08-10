@@ -43,13 +43,6 @@ export default function BoardScreen({ state, onExit }) {
       <button className="drago-reset-btn" onClick={() => setResetConfirmOpen(true)} aria-label="Nuova partita" title="Nuova partita">↺</button>
       <h1 className="drago-title">🐉 {GAME_TITLE}</h1>
 
-      {currentPlayer && (
-        <div className="drago-turn-banner glass-panel" style={{ borderColor: currentPlayer.color }}>
-          <span className="drago-turn-dot" style={{ background: currentPlayer.color }} />
-          Turno di <strong>{currentPlayer.name}</strong>
-        </div>
-      )}
-
       <div className="drago-grid-wrap">
         <div
           className="drago-grid"
@@ -97,17 +90,31 @@ export default function BoardScreen({ state, onExit }) {
         </div>
       </div>
 
-      <div className="drago-controls glass-panel">
-        <div className={'drago-die' + (rolling ? ' rolling' : '')}>
-          {lastRoll ? DICE_FACES[lastRoll] : '🎲'}
+      <div className="drago-bottom-row">
+        <div className="drago-controls glass-panel">
+          <div className={'drago-die' + (rolling ? ' rolling' : '')}>
+            {lastRoll ? DICE_FACES[lastRoll] : '🎲'}
+          </div>
+          <button className="btn btn-primary" onClick={rollDice} disabled={modalOpen || resolving}>
+            {rolling ? '⏳ Lancio...' : '🎲 Tira il dado'}
+          </button>
         </div>
-        <button className="btn btn-primary" onClick={rollDice} disabled={modalOpen || resolving}>
-          {rolling ? '⏳ Lancio...' : '🎲 Tira il dado'}
-        </button>
+
+        {currentPlayer && (
+          <div className="drago-turn-banner glass-panel" style={{ borderColor: currentPlayer.color }}>
+            <span className="drago-turn-dot" style={{ background: currentPlayer.color }} />
+            Turno di <strong>{currentPlayer.name}</strong>
+          </div>
+        )}
       </div>
 
       {!modalOpen && currentPlayer && (
-        <button className="drago-fab" onClick={() => setRollPopupOpen(true)} aria-label="Tira il dado">
+        <button
+          className="drago-fab"
+          style={{ background: currentPlayer.color }}
+          onClick={() => setRollPopupOpen(true)}
+          aria-label="Tira il dado"
+        >
           🎲
         </button>
       )}
@@ -135,8 +142,10 @@ export default function BoardScreen({ state, onExit }) {
           text="La partita in corso andrà persa."
           confirmLabel="Sì, nuova partita"
           cancelLabel="Annulla"
+          extraLabel="← Altri giochi"
           onConfirm={() => { setResetConfirmOpen(false); resetGame(); }}
           onCancel={() => setResetConfirmOpen(false)}
+          onExtra={onExit}
         />
       )}
     </div>
