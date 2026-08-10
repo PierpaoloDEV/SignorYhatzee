@@ -10,6 +10,9 @@ export const BASE_RULE = "Chi non rispetta una sfida o non vuole/può bere la qu
 // Stesse facce/stile del dado di Signor Yahtzee.
 export const DICE_FACES = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 export const ROLL_ANIM_MS = 400;
+// Tempo in cui resta visibile il risultato del dado prima che si apra
+// il modale informativo della casella su cui si è atterrati.
+export const ROLL_RESULT_PAUSE_MS = 1600;
 
 export const PAWN_COLORS = [
   '#ef4444', '#f97316', '#eab308', '#22c55e',

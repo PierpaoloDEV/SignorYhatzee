@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { BOARD_SIZE, MAX_PLAYERS, MIN_PLAYERS, PAWN_COLORS, ROLL_ANIM_MS } from '../constants';
+import { BOARD_SIZE, MAX_PLAYERS, MIN_PLAYERS, PAWN_COLORS, ROLL_ANIM_MS, ROLL_RESULT_PAUSE_MS } from '../constants';
 import { CELLS } from '../constants/cells';
 import { applyLanding } from '../utils/effects';
 
@@ -9,7 +9,8 @@ export function useDragoGame() {
   const [players, setPlayers] = useState([]); // [{ name, color, position }]
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [lastRoll, setLastRoll] = useState(null);
-  const [rolling, setRolling] = useState(false);
+  const [rolling, setRolling] = useState(false); // animazione di lancio (breve)
+  const [resolving, setResolving] = useState(false); // lancio + pausa risultato, fino all'apertura del modale
   const [activeCell, setActiveCell] = useState(null);
   const [eventModalOpen, setEventModalOpen] = useState(false);
 
@@ -25,29 +26,36 @@ export function useDragoGame() {
     setCurrentPlayerIndex(0);
     setLastRoll(null);
     setRolling(false);
+    setResolving(false);
     setActiveCell(null);
     setEventModalOpen(false);
     setPhase('playing');
   }, [playerNames]);
 
-  // L'animazione del dado gira per prima; solo al termine la pedina avanza
-  // davvero e si scopre su cosa è atterrata.
+  // L'animazione del dado gira per prima; il risultato resta visibile per
+  // una pausa (ROLL_RESULT_PAUSE_MS) e solo dopo la pedina avanza davvero
+  // e si apre il modale con le info sulla casella su cui è atterrata.
   const rollDice = useCallback(() => {
-    if (eventModalOpen || rolling || players.length === 0) return;
+    if (eventModalOpen || resolving || players.length === 0) return;
 
+    setResolving(true);
     setRolling(true);
     setTimeout(() => {
       const roll = 1 + Math.floor(Math.random() * 6);
-      const landedIndex = Math.min(players[currentPlayerIndex].position + roll, BOARD_SIZE - 1);
-      const landedCell = CELLS[landedIndex];
-
       setLastRoll(roll);
-      setPlayers((prev) => applyLanding(prev, currentPlayerIndex, landedIndex, landedCell));
-      setActiveCell(landedCell);
-      setEventModalOpen(true);
       setRolling(false);
+
+      setTimeout(() => {
+        const landedIndex = Math.min(players[currentPlayerIndex].position + roll, BOARD_SIZE - 1);
+        const landedCell = CELLS[landedIndex];
+
+        setPlayers((prev) => applyLanding(prev, currentPlayerIndex, landedIndex, landedCell));
+        setActiveCell(landedCell);
+        setEventModalOpen(true);
+        setResolving(false);
+      }, ROLL_RESULT_PAUSE_MS);
     }, ROLL_ANIM_MS);
-  }, [currentPlayerIndex, players, eventModalOpen, rolling]);
+  }, [currentPlayerIndex, players, eventModalOpen, resolving]);
 
   const closeEventModal = useCallback(() => {
     setEventModalOpen(false);
@@ -60,6 +68,7 @@ export function useDragoGame() {
     setCurrentPlayerIndex(0);
     setLastRoll(null);
     setRolling(false);
+    setResolving(false);
     setActiveCell(null);
     setEventModalOpen(false);
   }, []);
@@ -72,6 +81,7 @@ export function useDragoGame() {
     currentPlayerIndex,
     lastRoll,
     rolling,
+    resolving,
     activeCell,
     eventModalOpen,
     startGame,

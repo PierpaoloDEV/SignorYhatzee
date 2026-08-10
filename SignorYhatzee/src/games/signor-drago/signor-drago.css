@@ -114,6 +114,7 @@
   width: 100%;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 .drago-grid {
@@ -121,17 +122,18 @@
   gap: 0;
   width: min(96vw, 131vh, 1040px);
   aspect-ratio: 10 / 7;
-  background: rgba(0, 0, 0, .25);
-  border-radius: 4px;
-  padding: 4px;
+  background: linear-gradient(160deg, rgba(45, 24, 16, .6), rgba(8, 5, 6, .9));
+  border: 1px solid rgba(249, 115, 22, .22);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, .5), inset 0 0 40px rgba(249, 115, 22, .05);
 }
 
 .drago-grid-cell {
   position: relative;
-  background: rgba(15, 23, 42, .92);
+  background: linear-gradient(160deg, rgba(36, 26, 42, .92), rgba(17, 12, 22, .94));
   border-style: solid;
-  border-color: var(--red);
-  border-radius: 2px;
+  border-radius: 3px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -140,26 +142,21 @@
   padding: 1px 2px;
   line-height: 1.05;
   color: var(--text);
+  cursor: pointer;
+}
+.drago-grid-cell:hover {
+  filter: brightness(1.25);
 }
 
 .drago-grid-icon {
-  font-size: clamp(.7rem, 2.1vw, 1.15rem);
+  font-size: clamp(.9rem, 2.6vw, 1.5rem);
 }
 
 .drago-grid-number {
-  font-size: clamp(.4rem, .95vw, .55rem);
+  font-size: clamp(.5rem, 1.1vw, .7rem);
   color: var(--muted);
   font-weight: 700;
-}
-
-.drago-grid-name {
-  font-size: clamp(.3rem, .8vw, .46rem);
-  color: var(--text);
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+  margin-top: 1px;
 }
 
 .drago-grid-cell-center {
@@ -169,30 +166,27 @@
   z-index: 2;
 }
 .drago-grid-cell-center .drago-grid-icon {
-  font-size: clamp(1.1rem, 2.8vw, 1.8rem);
-}
-.drago-grid-cell-center .drago-grid-name {
-  font-weight: 800;
-  color: #fecaca;
+  font-size: clamp(1.2rem, 3.2vw, 2rem);
 }
 
 .drago-grid-pawns {
   position: absolute;
-  bottom: 1px;
-  right: 1px;
+  bottom: 2px;
+  right: 2px;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 1px;
-  max-width: 60%;
+  gap: 2px;
+  max-width: 72%;
+  z-index: 3;
 }
 
 .drago-pawn {
-  width: 7px;
-  height: 7px;
+  width: clamp(9px, 1.7vw, 16px);
+  height: clamp(9px, 1.7vw, 16px);
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, .85);
-  box-shadow: 0 0 3px rgba(0, 0, 0, .6);
+  border: 2px solid rgba(255, 255, 255, .9);
+  box-shadow: 0 0 4px rgba(0, 0, 0, .7);
 }
 
 /* ── Controlli ────────────────────────────────────────────── */
@@ -241,6 +235,220 @@
 
 @media (max-width: 400px) {
   .drago-die { width: 52px; height: 52px; font-size: 2rem; }
+}
+
+/* ── Pulsante reset compatto (in alto a destra, sempre visibile) ── */
+.drago-reset-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .15);
+  color: var(--text);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  z-index: 20;
+}
+
+/* ── Pulsante flottante "Tira il dado" (solo mobile) ─────────── */
+.drago-fab {
+  display: none;
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.8rem;
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, .5);
+  cursor: pointer;
+  z-index: 30;
+}
+.drago-fab:active { transform: scale(.95); }
+
+/* ── Popup lancio dado (sostituisce la barra fissa su mobile) ── */
+.drago-roll-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(5, 5, 10, .78);
+  animation: drago-fade-in .25s ease-out;
+}
+
+.drago-roll-content {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  background: rgba(15, 23, 42, .96);
+  border: 2px solid var(--event-color, #f97316);
+  box-shadow: 0 0 40px var(--event-color, #f97316);
+  border-radius: 20px 20px 12px 12px;
+  padding: 28px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.drago-roll-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.drago-roll-dot { width: 14px; height: 14px; }
+
+.drago-roll-turn {
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.drago-die-lg {
+  width: 96px;
+  height: 96px;
+  font-size: 4rem;
+  margin: 8px 0;
+}
+
+.drago-roll-btn {
+  width: 100%;
+  padding: 16px;
+}
+
+/* ── tablet/telefono (verticale o orizzontale) → tabellone fullscreen, controlli via FAB/popup ── */
+@media (max-width: 1024px), (orientation: landscape) and (max-height: 700px) {
+  .drago-board-shell {
+    height: 100dvh;
+    padding: 10px 8px;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+
+  .drago-title {
+    font-size: 1.2rem;
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .drago-turn-banner {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 14px;
+    font-size: .8rem;
+    z-index: 15;
+    white-space: nowrap;
+  }
+
+  /* Riempie tutto lo spazio residuo verticale: il tabellone si adatta al
+     contenitore usando le unità di container query, così mantiene le
+     proporzioni corrette (10 / 7) sia in verticale sia in orizzontale,
+     senza margini vuoti sprecati come con un semplice calcolo su vh/vw. */
+  .drago-grid-wrap {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    container-type: size;
+  }
+
+  .drago-grid {
+    width: min(97vw, calc((100dvh - 90px) * 10 / 7));
+    max-height: calc(100dvh - 90px);
+  }
+
+  @supports (container-type: size) {
+    .drago-grid {
+      width: min(98cqw, calc(98cqh * 10 / 7));
+      max-height: 100cqh;
+    }
+  }
+
+  .drago-controls {
+    display: none;
+  }
+
+  .drago-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Telefono in orizzontale: pochissima altezza disponibile, si toglie ogni
+   chrome superfluo per lasciare il tabellone il più grande possibile. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .drago-board-shell { padding: 6px 8px; gap: 4px; }
+  .drago-title { display: none; }
+  .drago-turn-banner { top: 6px; padding: 4px 10px; font-size: .7rem; }
+  .drago-fab { width: 52px; height: 52px; font-size: 1.4rem; bottom: 12px; right: 12px; }
+  .drago-reset-btn { width: 30px; height: 30px; top: 10px; right: 10px; }
+  .back-btn { top: 10px; left: 10px; font-size: .85rem; }
+}
+
+/* ── Modale di conferma (es. nuova partita) ──────────────────── */
+.drago-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(5, 5, 10, .78);
+  animation: drago-fade-in .2s ease-out;
+}
+
+.drago-confirm-content {
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+  background: rgba(15, 23, 42, .97);
+  border: 2px solid rgba(249, 115, 22, .4);
+  box-shadow: 0 0 40px rgba(249, 115, 22, .25);
+  border-radius: 16px;
+  padding: 28px 24px;
+}
+
+.drago-confirm-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.drago-confirm-text {
+  color: var(--muted);
+  margin-top: 10px;
+  font-size: .95rem;
+  line-height: 1.4;
+}
+
+.drago-confirm-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+}
+.drago-confirm-actions .btn {
+  flex: 1;
+  padding: 12px;
 }
 
 /* ── Modale evento casella ────────────────────────────────── */
