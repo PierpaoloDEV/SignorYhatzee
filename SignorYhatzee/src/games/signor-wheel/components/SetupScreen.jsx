@@ -20,7 +20,7 @@ export default function SetupScreen({ state, onExit }) {
 
   return (
     <div className="app drago-app">
-      <button className="back-btn" onClick={onExit}>← Altri giochi</button>
+      <button className="back-btn wheel-back-btn" onClick={onExit}>← Altri giochi</button>
       <h1 className="drago-title">🎡 Signor Wheel</h1>
       <p className="drago-subtitle">Aggiungi i giocatori (min {MIN_PLAYERS}, max {MAX_PLAYERS})</p>
 

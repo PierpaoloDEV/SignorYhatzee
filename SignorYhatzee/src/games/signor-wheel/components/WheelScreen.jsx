@@ -1,6 +1,6 @@
 import EventModal from './EventModal';
 import RulesModal from './RulesModal';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 export default function WheelScreen({ state, onExit }) {
   const {
@@ -12,6 +12,7 @@ export default function WheelScreen({ state, onExit }) {
 
   const currentPlayer = players[currentPlayerIndex];
   const touchStartRef = useRef(null);
+  const [showExitModal, setShowExitModal] = useState(false);
 
   const handleTouchStart = (e) => {
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -45,7 +46,7 @@ export default function WheelScreen({ state, onExit }) {
 
   return (
     <div className="drago-board-shell wheel-board-shell">
-      <button className="back-btn" onClick={onExit}>← Altri giochi</button>
+      <button className="back-btn wheel-back-btn" onClick={() => setShowExitModal(true)}>← Altri giochi</button>
       <h1 className="drago-title">🎡 Signor Wheel</h1>
 
       {currentPlayer && (
@@ -108,6 +109,19 @@ export default function WheelScreen({ state, onExit }) {
       </div>
 
       {eventModalOpen && activeResult && <EventModal result={activeResult} onClose={closeEventModal} />}
+
+      {showExitModal && (
+        <div className="wheel-event-overlay show" onClick={() => setShowExitModal(false)} style={{ zIndex: 10000 }}>
+          <div className="wheel-event-content" onClick={e => e.stopPropagation()} style={{ borderColor: '#ef4444', boxShadow: '0 0 40px #ef4444' }}>
+            <div className="wheel-event-title" style={{ fontSize: '1.8rem', color: '#ef4444', textShadow: 'none' }}>Sei sicuro?</div>
+            <div className="wheel-event-text">Vuoi davvero uscire dal gioco?</div>
+            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '25px' }}>
+              <button className="btn" style={{ background: '#333' }} onClick={() => setShowExitModal(false)}>Annulla</button>
+              <button className="btn btn-primary" style={{ background: '#ef4444', borderColor: '#ef4444' }} onClick={onExit}>Esci</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

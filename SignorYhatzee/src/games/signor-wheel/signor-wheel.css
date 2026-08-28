@@ -2,11 +2,20 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* Centra verticalmente gli elementi (titolo, cassa, pulsante) */
+  justify-content: center;
   padding: 1rem;
   max-width: 800px;
   margin: 0 auto;
   min-height: 100vh;
+  position: relative;
+}
+
+.wheel-back-btn {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 100;
+  display: block !important;
 }
 
 /* ── CS:GO Slider ── */
