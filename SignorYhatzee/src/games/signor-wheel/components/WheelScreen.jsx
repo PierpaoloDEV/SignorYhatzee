@@ -50,7 +50,7 @@ export default function WheelScreen({ state, onExit }) {
       <h1 className="drago-title">🎡 Signor Wheel</h1>
 
       {currentPlayer && (
-        <div className="drago-turn-banner glass-panel" style={{ borderColor: currentPlayer.color }}>
+        <div className="drago-turn-banner glass-panel wheel-desktop-turn" style={{ borderColor: currentPlayer.color }}>
           <span className="drago-turn-dot" style={{ background: currentPlayer.color }} />
           Turno di <strong>{currentPlayer.name}</strong>
         </div>
@@ -106,6 +106,12 @@ export default function WheelScreen({ state, onExit }) {
         >
           {spinning ? 'Apertura in corso...' : 'Apri Cassa'}
         </button>
+
+        {currentPlayer && (
+          <div className="wheel-mobile-turn" style={{ marginTop: '15px', fontSize: '1.1rem', color: '#fff' }}>
+            Turno di <strong style={{ color: currentPlayer.color }}>{currentPlayer.name}</strong>
+          </div>
+        )}
       </div>
 
       {eventModalOpen && activeResult && <EventModal result={activeResult} onClose={closeEventModal} />}

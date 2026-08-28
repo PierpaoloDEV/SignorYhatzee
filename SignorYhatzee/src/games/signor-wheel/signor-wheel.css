@@ -297,3 +297,17 @@
     text-align: center;
   }
 }
+
+/* ── Turn Indicator Responsive ── */
+.wheel-mobile-turn {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .wheel-desktop-turn {
+    display: none !important;
+  }
+  .wheel-mobile-turn {
+    display: block;
+  }
+}
